@@ -5,6 +5,7 @@ from typing import Any, Union
 import gradio as gr
 import numpy as np
 import torch
+import torch.fft
 from safetensors import safe_open
 from safetensors.torch import save_file
 
@@ -113,6 +114,82 @@ def merge_style_usual(
 
     return list(new_style2id.keys())
 
+
+def merge_style_frequency_domain(
+        model_name_a: str,
+        model_name_b: str,
+        voice_weight: float,
+        voice_pitch_weight: float,
+        speech_style_weight: float,
+        tempo_weight: float,
+        output_name: str,
+        style_tuple_list: list[tuple[str, ...]],
+) -> list[str]:
+    style_vectors_a = load_style_vectors(model_name_a)
+    style_vectors_b = load_style_vectors(model_name_b)
+    config_a = load_config(model_name_a)
+    config_b = load_config(model_name_b)
+    style2id_a = config_a["data"]["style2id"]
+    style2id_b = config_b["data"]["style2id"]
+    new_style_vecs = []
+    new_style2id = {}
+
+    for style_a, style_b, style_out in style_tuple_list:
+        if style_a not in style2id_a:
+            logger.error(f"{style_a} is not in {model_name_a}.")
+            raise ValueError(f"{style_a} は {model_name_a} にありません。")
+        if style_b not in style2id_b:
+            logger.error(f"{style_b} is not in {model_name_b}.")
+            raise ValueError(f"{style_b} は {model_name_b} にありません。")
+
+        vec_a = style_vectors_a[style2id_a[style_a]]
+        vec_b = style_vectors_b[style2id_b[style_b]]
+
+        # FFTを適用
+        fft_a = torch.fft.fftn(torch.tensor(vec_a))
+        fft_b = torch.fft.fftn(torch.tensor(vec_b))
+
+        # 振幅と位相を分離
+        amp_a, phase_a = torch.abs(fft_a), torch.angle(fft_a)
+        amp_b, phase_b = torch.abs(fft_b), torch.angle(fft_b)
+
+        # 位相のみを補間 (ここではspeech_style_weightを使用)
+        merged_phase = (1 - speech_style_weight) * phase_a + speech_style_weight * phase_b
+
+        # 振幅は重み付き平均を使用
+        merged_amp = (1 - speech_style_weight) * amp_a + speech_style_weight * amp_b
+
+        # 振幅と位相を組み合わせて新しいFFTを作成
+        merged_fft = merged_amp * torch.exp(1j * merged_phase)
+
+        # 逆FFTを適用
+        new_style = torch.fft.ifftn(merged_fft).real.numpy()
+
+        # 正規化を追加
+        new_style = (new_style - new_style.mean()) / new_style.std()
+
+        new_style_vecs.append(new_style)
+        new_style2id[style_out] = len(new_style_vecs) - 1
+
+    new_style_vecs = np.array(new_style_vecs)
+    save_style_vectors(new_style_vecs, output_name)
+
+    new_config = config_a.copy()
+    new_config["data"]["num_styles"] = len(new_style2id)
+    new_config["data"]["style2id"] = new_style2id
+    new_config["model_name"] = output_name
+    save_config(new_config, output_name)
+
+    recipe = load_recipe(output_name)
+    recipe["style_tuple_list"] = style_tuple_list
+    recipe["method"] = "frequency_domain"
+    recipe["voice_weight"] = voice_weight
+    recipe["voice_pitch_weight"] = voice_pitch_weight
+    recipe["speech_style_weight"] = speech_style_weight
+    recipe["tempo_weight"] = tempo_weight
+    save_recipe(recipe, output_name)
+
+    return list(new_style2id.keys())
 
 def merge_style_add_diff(
     model_name_a: str,
@@ -623,12 +700,13 @@ def merge_models_gr(
     use_slerp_instead_of_lerp: bool,
 ):
     if output_name == "":
-        return "Error: 新しいモデル名を入力してください。"
+        return "Error: 新しいモデル名を入力してください。", None
     assert method in [
         "usual",
         "add_diff",
         "weighted_sum",
         "add_null",
+        "frequency_domain",  # この行を追加
     ], f"Invalid method: {method}"
     model_a_name = Path(model_path_a).parent.name
     model_b_name = Path(model_path_b).parent.name
@@ -708,6 +786,31 @@ def merge_style_usual_gr(
         choices=new_styles, value=new_styles[0]
     )
 
+def merge_style_frequency_domain_gr(
+    model_name_a: str,
+    model_name_b: str,
+    voice_weight: float,
+    voice_pitch_weight: float,
+    speech_style_weight: float,
+    tempo_weight: float,
+    output_name: str,
+    style_tuple_list: list[tuple[str, ...]],
+):
+    if output_name == "":
+        return "Error: 新しいモデル名を入力してください。", None
+    new_styles = merge_style_frequency_domain(
+        model_name_a,
+        model_name_b,
+        voice_weight,
+        voice_pitch_weight,
+        speech_style_weight,
+        tempo_weight,
+        output_name,
+        style_tuple_list,
+    )
+    return f"Success: {output_name}のスタイルを保存しました。", gr.Dropdown(
+        choices=new_styles, value=new_styles[0]
+    )
 
 def merge_style_add_diff_gr(
     model_name_a: str,
@@ -795,7 +898,6 @@ def simple_tts(
         "Success: 音声を生成しました。",
         model.infer(text, style=style, style_weight=style_weight),
     )
-
 
 def update_three_model_names_dropdown(model_holder: TTSModelHolder):
     new_names, new_files, _ = model_holder.update_model_names_for_gradio()
@@ -950,6 +1052,16 @@ tts_md = f"""
 マージ後のモデルで音声合成を行います。ただし、デフォルトではスタイルは`{DEFAULT_STYLE}`しか使えないので、他のスタイルを使いたい場合は、下の「スタイルベクトルのマージ」を行ってください。
 """
 
+frequency_domain_md = """
+## 周波数領域マージ
+
+このマージ方法は、モデルの重みを周波数領域で操作します。各パラメータ（声質、声の高さ、話し方、テンポ）に対して個別の周波数重みを設定できます。
+
+- 0に近い値: モデルAの特徴を強く保持
+- 1に近い値: モデルBの特徴をより多く取り入れる
+
+この方法は、異なる周波数帯域の特徴を選択的に組み合わせることができ、より細かい制御が可能になる可能性があります。ただし、効果は実験的であり、従来の方法と比較して結果が大きく異なる場合があります。
+"""
 
 def method_change(x: str):
     assert x in [
@@ -957,8 +1069,9 @@ def method_change(x: str):
         "add_diff",
         "weighted_sum",
         "add_null",
+        "frequency_domain",  # 新しいメソッドを追加
     ], f"Invalid method: {x}"
-    # model_desc, c_col, model_a_coeff, model_b_coeff, model_c_coeff, weight_row, use_slerp_instead_of_lerp
+    # model_desc, c_col, model_a_coeff, model_b_coeff, model_c_coeff, weight_row, use_slerp_instead_of_lerp, freq_weight_col
     if x == "usual":
         return (
             gr.Markdown(usual_md),
@@ -989,7 +1102,7 @@ def method_change(x: str):
             gr.Row(visible=True),
             gr.Checkbox(visible=False),
         )
-    else:  # weighted_sum
+    elif x == "weighted_sum":
         return (
             gr.Markdown(weighted_sum_md),
             gr.Column(visible=True),
@@ -999,7 +1112,16 @@ def method_change(x: str):
             gr.Row(visible=False),
             gr.Checkbox(visible=False),
         )
-
+    else:  # frequency_domain
+        return (
+            gr.Markdown(frequency_domain_md),  # 新しい説明用のMarkdown
+            gr.Column(visible=False),
+            gr.Number(visible=False),
+            gr.Number(visible=False),
+            gr.Number(visible=False),
+            gr.Row(visible=True),
+            gr.Checkbox(visible=False),
+        )
 
 def create_merge_app(model_holder: TTSModelHolder) -> gr.Blocks:
     model_names = model_holder.model_names
@@ -1030,6 +1152,7 @@ def create_merge_app(model_holder: TTSModelHolder) -> gr.Blocks:
                 ("差分マージ", "add_diff"),
                 ("加重和", "weighted_sum"),
                 ("ヌルモデルマージ", "add_null"),
+                ("周波数領域マージ", "frequency_domain"),  # 新しい選択肢
             ],
             value="usual",
         )
@@ -1421,6 +1544,86 @@ def create_merge_app(model_holder: TTSModelHolder) -> gr.Blocks:
                             ),
                             outputs=[info_style_merge, style],
                         )
+
+                elif method == "frequency_domain":
+                    for i in range(style_count):
+                        with gr.Row():
+                            style_a = gr.Dropdown(
+                                label="モデルAのスタイル名",
+                                key=f"style_a_{i}",
+                                choices=style_a_list,
+                                value=DEFAULT_STYLE,
+                                interactive=i != 0,
+                            )
+
+                            style_b = gr.Dropdown(
+                                label="モデルBのスタイル名",
+                                key=f"style_b_{i}",
+                                choices=style_b_list,
+                                value=DEFAULT_STYLE,
+                                interactive=i != 0,
+                            )
+
+                            style_out = gr.Textbox(
+                                label="出力スタイル名",
+                                key=f"style_out_{i}",
+                                value=DEFAULT_STYLE,
+                                interactive=i != 0,
+                            )
+
+                            style_a.change(
+                                join_names,
+                                inputs=[style_a, style_b],
+                                outputs=[style_out],
+                            )
+
+                            style_b.change(
+                                join_names,
+                                inputs=[style_a, style_b],
+                                outputs=[style_out],
+                            )
+
+                        a_components.append(style_a)
+                        b_components.append(style_b)
+                        out_components.append(style_out)
+
+                    def _merge_frequency_domain(data):
+                        style_tuple_list = [
+                            (data[a], data[b], data[out])
+                            for a, b, out in zip(
+                                a_components, b_components, out_components
+                            )
+                        ]
+
+                        return merge_style_frequency_domain_gr(
+                            data[model_name_a],
+                            data[model_name_b],
+                            data[voice_slider],  # 既存の声質スライダーを使用
+                            data[voice_pitch_slider],  # 既存の声の高さスライダーを使用
+                            data[speech_style_slider],  # 既存の話し方スライダーを使用
+                            data[tempo_slider],  # 既存のテンポスライダーを使用
+                            data[new_name],
+                            style_tuple_list,
+                        )
+
+                    style_merge_btn.click(
+                        _merge_frequency_domain,
+                        inputs=set(
+                            a_components
+                            + b_components
+                            + out_components
+                            + [
+                                model_name_a,
+                                model_name_b,
+                                voice_slider,
+                                voice_pitch_slider,
+                                speech_style_slider,
+                                tempo_slider,
+                                new_name,
+                            ]
+                        ),
+                        outputs=[info_style_merge, style],
+                    )
 
             with gr.Row():
                 add_btn = gr.Button("スタイルを増やす")
