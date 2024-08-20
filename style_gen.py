@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from numpy.typing import NDArray
 from pyannote.audio import Inference, Model
+from pyannote.core import SlidingWindowFeature
 from tqdm import tqdm
 
 from config import get_config
@@ -17,7 +18,7 @@ from style_bert_vits2.utils.stdout_wrapper import SAFE_STDOUT
 config = get_config()
 
 model = Model.from_pretrained("pyannote/wespeaker-voxceleb-resnet34-LM")
-inference = Inference(model, window="whole")
+inference = Inference(model, window="sliding", duration=5.0)
 device = torch.device(config.style_gen_config.device)
 inference.to(device)
 
@@ -38,12 +39,20 @@ def save_style_vector(wav_path: str):
         print("\n")
         logger.error(f"Error occurred with file: {wav_path}, Details:\n{e}\n")
         raise
+    
+    # SlidingWindowFeature を NumPy 配列に変換
+    if isinstance(style_vec, SlidingWindowFeature):
+        style_vec_array = style_vec.data
+    else:
+        style_vec_array = style_vec
+
     # 値にNaNが含まれていると悪影響なのでチェックする
-    if np.isnan(style_vec).any():
+    if np.isnan(style_vec_array).any():
         print("\n")
         logger.warning(f"NaN value found in style vector: {wav_path}")
         raise NaNValueError(f"NaN value found in style vector: {wav_path}")
-    np.save(f"{wav_path}.npy", style_vec)  # `test.wav` -> `test.wav.npy`
+    
+    np.save(f"{wav_path}.npy", style_vec_array)  # `test.wav` -> `test.wav.npy`
 
 
 def process_line(line: str):
