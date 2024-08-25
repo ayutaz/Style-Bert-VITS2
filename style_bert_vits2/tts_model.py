@@ -6,7 +6,6 @@ import pyworld as pw
 import torch
 from numpy.typing import NDArray
 from pydantic import BaseModel
-from scipy import signal
 
 from style_bert_vits2.constants import (
     DEFAULT_ASSIST_TEXT_WEIGHT,
@@ -104,19 +103,6 @@ class TTSModel:
         self.__style_vector_inference: Optional[Any] = None
 
         self.__net_g: Union[SynthesizerTrn, SynthesizerTrnJPExtra, None] = None
-
-    def extract_features(self, audio, fs):
-        """
-        音声から特徴量を抽出する。
-        :param audio:
-        :param fs:
-        :return:
-        """
-        audio = audio.astype(np.float64)
-        f0, time_axis = pw.harvest(audio, fs, frame_period=1.0)
-        sp = pw.cheaptrick(audio, f0, time_axis, fs)
-        ap = pw.d4c(audio, f0, time_axis, fs)
-        return f0, sp, ap
 
     def morph_models(self, target_model: 'TTSModel', morph_ratio: float, text: str, base_speaker_id: int,
                      target_speaker_id: int) -> (int, NDArray[np.float32]):
