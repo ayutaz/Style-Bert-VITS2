@@ -2,9 +2,11 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
+import pyworld as pw
 import torch
 from numpy.typing import NDArray
 from pydantic import BaseModel
+from scipy import signal
 
 from style_bert_vits2.constants import (
     DEFAULT_ASSIST_TEXT_WEIGHT,
@@ -102,6 +104,57 @@ class TTSModel:
         self.__style_vector_inference: Optional[Any] = None
 
         self.__net_g: Union[SynthesizerTrn, SynthesizerTrnJPExtra, None] = None
+
+    def extract_features(self, audio, fs):
+        """
+        音声から特徴量を抽出する。
+        :param audio:
+        :param fs:
+        :return:
+        """
+        audio = audio.astype(np.float64)
+        f0, time_axis = pw.harvest(audio, fs, frame_period=1.0)
+        sp = pw.cheaptrick(audio, f0, time_axis, fs)
+        ap = pw.d4c(audio, f0, time_axis, fs)
+        return f0, sp, ap
+
+    def morph_models(self, target_model: 'TTSModel', morph_ratio: float, text: str, base_speaker_id: int,
+                     target_speaker_id: int) -> (int, NDArray[np.float32]):
+        """
+        2つの音声合成モデルをモーフィングする。
+        :param target_model:
+        :param morph_ratio:
+        :param text:
+        :param base_speaker_id:
+        :param target_speaker_id:
+        :return:
+        """
+        frame_rate, base_audio = self.infer(text, speaker_id=base_speaker_id)
+        target_frame_rate, target_audio = target_model.infer(text, speaker_id=target_speaker_id)
+
+        print(f"Base frame rate: {frame_rate}, shape: {base_audio.shape}")
+        print(f"Target frame rate: {target_frame_rate}, shape: {target_audio.shape}")
+
+        if frame_rate != target_frame_rate:
+            raise ValueError("Base and target audio have different sampling rates. This is not supported.")
+
+        # PyWorldを使用して音声特徴量を抽出
+        frame_period = 1.0
+        base_f0, base_t = pw.harvest(base_audio, frame_rate, frame_period=frame_period)
+        base_sp = pw.cheaptrick(base_audio, base_f0, base_t, frame_rate)
+        base_ap = pw.d4c(base_audio, base_f0, base_t, frame_rate)
+
+        target_f0, target_t = pw.harvest(target_audio, frame_rate, frame_period=frame_period)
+        target_sp = pw.cheaptrick(target_audio, target_f0, target_t, frame_rate)
+        target_sp.resize(base_sp.shape)
+
+        # スペクトル包絡のモーフィング
+        morph_sp = (1 - morph_ratio) * base_sp + morph_ratio * target_sp
+
+        # PyWorldを使用して音声を合成
+        morph_audio = pw.synthesize(base_f0, morph_sp, base_ap, frame_rate, frame_period)
+
+        return frame_rate, morph_audio.astype(np.float32)
 
     def load(self) -> None:
         """

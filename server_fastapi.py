@@ -12,6 +12,7 @@ from typing import Any, Optional
 from urllib.parse import unquote
 
 import GPUtil
+import numpy as np
 import psutil
 import torch
 import uvicorn
@@ -254,6 +255,85 @@ if __name__ == "__main__":
         with BytesIO() as wavContent:
             wavfile.write(wavContent, sr, audio)
             return Response(content=wavContent.getvalue(), media_type="audio/wav")
+
+
+    @app.api_route("/morph", methods=["POST"], response_class=AudioResponse)
+    async def morph(
+            request: Request,
+            text: str = Query(..., min_length=1, max_length=limit, description="セリフ"),
+            encoding: str = Query(None, description="textをURLデコードする(ex, `utf-8`)"),
+            base_model_name: str = Query(..., description="ベースモデル名"),
+            base_speaker_name: str = Query(..., description="ベース話者名"),
+            target_model_name: str = Query(..., description="ターゲットモデル名"),
+            target_speaker_name: str = Query(..., description="ターゲット話者名"),
+            morph_ratio: float = Query(0.5, ge=0.0, le=1.0, description="モーフィングの割合 (0.0 ~ 1.0)"),
+    ):
+        """2つのモデル間でモーフィングを行い、音声を生成する"""
+        logger.info(
+            f"{request.client.host}:{request.client.port}/morph  {unquote(str(request.query_params))}"
+        )
+
+        # ベースモデルとターゲットモデルの取得
+        base_model = next((m for m in loaded_models if m.config_path.parent.name == base_model_name), None)
+        target_model = next((m for m in loaded_models if m.config_path.parent.name == target_model_name), None)
+
+        if not base_model:
+            raise_validation_error(f"base_model_name={base_model_name} not found", "base_model_name")
+        if not target_model:
+            raise_validation_error(f"target_model_name={target_model_name} not found", "target_model_name")
+
+        # 話者IDの取得
+        if base_speaker_name not in base_model.spk2id:
+            raise_validation_error(f"base_speaker_name={base_speaker_name} not found", "base_speaker_name")
+        base_speaker_id = base_model.spk2id[base_speaker_name]
+
+        if target_speaker_name not in target_model.spk2id:
+            raise_validation_error(f"target_speaker_name={target_speaker_name} not found", "target_speaker_name")
+        target_speaker_id = target_model.spk2id[target_speaker_name]
+
+        # テキストのデコード
+        if encoding is not None:
+            text = unquote(text, encoding=encoding)
+
+        try:
+            # モーフィング処理
+            frame_rate, morph_wave = base_model.morph_models(
+                target_model,
+                morph_ratio,
+                text,
+                base_speaker_id,
+                target_speaker_id
+            )
+
+            print(f"Morph wave shape: {morph_wave.shape}")
+            print(f"Morph wave min: {morph_wave.min()}, max: {morph_wave.max()}")
+            print(f"Morph wave mean: {morph_wave.mean()}, std: {morph_wave.std()}")
+
+            # 音声情報の表示
+            logger.debug(f"frame_rate: {frame_rate}, morph_wave: {morph_wave}")
+
+            logger.success("Morphed audio data generated successfully")
+
+            # 正規化を-1から1の範囲に確実に行う
+            morph_wave = morph_wave / np.max(np.abs(morph_wave))
+            morph_wave = np.clip(morph_wave, -1, 1)
+
+            # float32からint16に変換
+            audio_int16 = np.int16(morph_wave * 32767)
+
+            # WAVデータをメモリ内で生成
+            with BytesIO() as wav_content:
+                wavfile.write(wav_content, frame_rate, audio_int16)
+                wav_data = wav_content.getvalue()
+
+            # Content-Lengthヘッダーを含めてレスポンスを返す
+            headers = {
+                "Content-Length": str(len(wav_data)),
+                "Content-Disposition": "attachment; filename=morphed_audio.wav"
+            }
+            return Response(content=wav_data, media_type="audio/wav", headers=headers)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"音声生成中にエラーが発生しました: {str(e)}")
 
     @app.get("/models/info")
     def get_loaded_models_info():
