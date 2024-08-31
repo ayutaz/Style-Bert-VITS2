@@ -315,12 +315,22 @@ def merge_models_usual(
     """
     new = (1 - weight) * A + weight * B
     """
+    print(f"Merging models: A: {model_path_a}, B: {model_path_b}, Output: {output_name}")
     model_a_weight = load_safetensors(model_path_a)
     model_b_weight = load_safetensors(model_path_b)
 
     merged_model_weight = model_a_weight.copy()
 
     for key in model_a_weight:
+        if key not in model_b_weight:
+            print(f"Warning: Key {key} not found in model B, skipping...")
+            continue
+
+        if model_a_weight[key].shape != model_b_weight[key].shape:
+            print(
+                f"Error: Shape mismatch for key {key}. A: {model_a_weight[key].shape}, B: {model_b_weight[key].shape}")
+            continue
+
         if any([key.startswith(prefix) for prefix in voice_keys]):
             weight = voice_weight
         elif any([key.startswith(prefix) for prefix in voice_pitch_keys]):
@@ -331,12 +341,23 @@ def merge_models_usual(
             weight = tempo_weight
         else:
             continue
-        merged_model_weight[key] = (
-            slerp_tensors if use_slerp_instead_of_lerp else lerp_tensors
-        )(weight, model_a_weight[key], model_b_weight[key])
+        try:
+            merge_func = slerp_tensors if use_slerp_instead_of_lerp else lerp_tensors
+            merged_model_weight[key] = merge_func(weight, model_a_weight[key], model_b_weight[key])
+        except Exception as e:
+            print(f"Error merging key {key}: {str(e)}")
+            print(f"A dtype: {model_a_weight[key].dtype}, B dtype: {model_b_weight[key].dtype}")
+            raise
 
     merged_model_path = assets_root / output_name / f"{output_name}.safetensors"
     merged_model_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        save_file(merged_model_weight, merged_model_path)
+        print(f"Saved merged model to {merged_model_path}")
+    except Exception as e:
+        print(f"Error saving merged model: {str(e)}")
+        raise
     save_file(merged_model_weight, merged_model_path)
 
     receipe = {
