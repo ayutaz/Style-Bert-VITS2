@@ -21,7 +21,7 @@ from style_bert_vits2.constants import (
 )
 from style_bert_vits2.logging import logger
 from style_bert_vits2.models.hyper_parameters import HyperParameters
-from style_bert_vits2.models.infer import get_net_g, infer
+from style_bert_vits2.models.infer import get_net_g, infer, morphing_infer, prepare_input_data
 from style_bert_vits2.models.models import SynthesizerTrn
 from style_bert_vits2.models.models_jp_extra import (
     SynthesizerTrn as SynthesizerTrnJPExtra,
@@ -104,44 +104,78 @@ class TTSModel:
 
         self.__net_g: Union[SynthesizerTrn, SynthesizerTrnJPExtra, None] = None
 
-    def morph_models(self, target_model: 'TTSModel', morph_ratio: float, text: str, base_speaker_id: int,
+    def morph_models(self, morph_ratio: float, text: str, base_speaker_id: int,
                      target_speaker_id: int) -> (int, NDArray[np.float32]):
         """
         2つの音声合成モデルをモーフィングする。
-        :param target_model:
         :param morph_ratio:
         :param text:
         :param base_speaker_id:
         :param target_speaker_id:
         :return:
         """
-        frame_rate, base_audio = self.infer(text, speaker_id=base_speaker_id)
-        target_frame_rate, target_audio = target_model.infer(text, speaker_id=target_speaker_id)
 
-        print(f"Base frame rate: {frame_rate}, shape: {base_audio.shape}")
-        print(f"Target frame rate: {target_frame_rate}, shape: {target_audio.shape}")
+        # 固定のサンプリングレートを定義
+        SAMPLING_RATE = 44100
 
-        if frame_rate != target_frame_rate:
-            raise ValueError("Base and target audio have different sampling rates. This is not supported.")
+        # モーフィングのためのパラメータを作成
+        morphing_data = self.create_morphing_parameters(
+            text=text,
+            language=Languages.JP,
+            reference_audio_path=None,
+            sdp_ratio=DEFAULT_SDP_RATIO,
+            noise=DEFAULT_NOISE,
+            noise_w=DEFAULT_NOISEW,
+            length=DEFAULT_LENGTH,
+            assist_text=None,
+            assist_text_weight=DEFAULT_ASSIST_TEXT_WEIGHT)
+
+        # 次に、prepare_input_data を使って入力データを準備
+        input_data = prepare_input_data(
+            morphing_data,
+            skip_start=False,
+            skip_end=False
+        )
+
+        base_audio = morphing_infer(morphing_data, input_data, base_speaker_id).astype(np.float64)
+        target_audio = morphing_infer(morphing_data, input_data, target_speaker_id).astype(np.float64)
+
+        print(f"Base speaker ID: {base_speaker_id}")
+        print(f"Target speaker ID: {target_speaker_id}")
+
+        # 一時的に両方の音声を保存して確認
+        from scipy.io import wavfile
+        wavfile.write("debug_base_audio.wav", SAMPLING_RATE, base_audio.astype(np.float32))
+        wavfile.write("debug_target_audio.wav", SAMPLING_RATE, target_audio.astype(np.float32))
+
+        print("音声の推論の作成")
 
         # PyWorldを使用して音声特徴量を抽出
         frame_period = 1.0
-        base_f0, base_t = pw.harvest(base_audio, frame_rate, frame_period=frame_period)
-        base_sp = pw.cheaptrick(base_audio, base_f0, base_t, frame_rate)
-        base_ap = pw.d4c(base_audio, base_f0, base_t, frame_rate)
+        base_f0, base_t = pw.harvest(base_audio, SAMPLING_RATE, frame_period=frame_period)
+        base_sp = pw.cheaptrick(base_audio, base_f0, base_t, SAMPLING_RATE)
+        base_ap = pw.d4c(base_audio, base_f0, base_t, SAMPLING_RATE)
 
-        target_f0, target_t = pw.harvest(target_audio, frame_rate, frame_period=frame_period)
-        target_sp = pw.cheaptrick(target_audio, target_f0, target_t, frame_rate)
+        target_f0, target_t = pw.harvest(target_audio, SAMPLING_RATE, frame_period=frame_period)
+        target_sp = pw.cheaptrick(target_audio, target_f0, target_t, SAMPLING_RATE)
         target_sp.resize(base_sp.shape)
+
+        print(f"Base F0 shape: {base_f0.shape}, mean: {np.mean(base_f0)}")
+        print(f"Target F0 shape: {target_f0.shape}, mean: {np.mean(target_f0)}")
+        print(f"Base SP shape: {base_sp.shape}, mean: {np.mean(base_sp)}")
+        print(f"Target SP shape: {target_sp.shape}, mean: {np.mean(target_sp)}")
 
         # スペクトル包絡のモーフィング
         morph_sp = (1 - morph_ratio) * base_sp + morph_ratio * target_sp
 
+        print(f"Morphed SP shape: {morph_sp.shape}, mean: {np.mean(morph_sp)}")
+        print(f"Difference between base and morphed SP: {np.mean(np.abs(base_sp - morph_sp))}")
+
         # PyWorldを使用して音声を合成
-        morph_audio = pw.synthesize(base_f0, morph_sp, base_ap, frame_rate, frame_period)
+        morph_audio = pw.synthesize(base_f0, morph_sp, base_ap, SAMPLING_RATE, frame_period)
 
-        return frame_rate, morph_audio.astype(np.float32)
-
+        print(f"Synthesized audio shape: {morph_audio.shape}, mean: {np.mean(morph_audio)}")
+        return SAMPLING_RATE, morph_audio.astype(np.float32)
     def load(self) -> None:
         """
         音声合成モデルをデバイスにロードする。
@@ -244,6 +278,81 @@ class TTSModel:
                 f"{data.dtype} to 16-bit int format."
             )
         return data
+
+    def create_morphing_parameters(
+        self,
+        text: str,
+        language: Languages = Languages.JP,
+        reference_audio_path: Optional[str] = None,
+        sdp_ratio: float = DEFAULT_SDP_RATIO,
+        noise: float = DEFAULT_NOISE,
+        noise_w: float = DEFAULT_NOISEW,
+        length: float = DEFAULT_LENGTH,
+        assist_text: Optional[str] = None,
+        assist_text_weight: float = DEFAULT_ASSIST_TEXT_WEIGHT,
+        use_assist_text: bool = False,
+        style: str = DEFAULT_STYLE,
+        style_weight: float = DEFAULT_STYLE_WEIGHT,
+        given_phone: Optional[list[str]] = None,
+        given_tone: Optional[list[int]] = None,
+    ) -> dict:
+        """
+        モーフィングのためのパラメータを作成する
+
+        :param text: 変換するテキスト
+        :param language: 使用言語
+        :param reference_audio_path: 参照音声ファイルのパス
+        :param sdp_ratio: SDP比率
+        :param noise: ノイズスケール
+        :param noise_w: ノイズスケールW
+        :param length: 長さスケール
+        :param assist_text: 補助テキスト
+        :param assist_text_weight: 補助テキストの重み
+        :param use_assist_text: 補助テキストを使用するかどうか
+        :param style: スタイル
+        :param style_weight: スタイルの重み
+        :param given_phone: 指定された音素リスト
+        :param given_tone: 指定されたトーンリスト
+        :return: モーフィングパラメータを含む辞書
+        """
+        # reference_audio_path が空文字列の場合は None に設定
+        if reference_audio_path == "":
+            reference_audio_path = None
+
+        # assist_text が空文字列または use_assist_text が False の場合は None に設定
+        if assist_text == "" or not use_assist_text:
+            assist_text = None
+
+        # style_vector の取得
+        if reference_audio_path is None:
+            style_id = self.style2id[style]
+            style_vector = self.__get_style_vector(style_id, style_weight)
+        else:
+            style_vector = self.__get_style_vector_from_audio(
+                reference_audio_path, style_weight
+            )
+
+        if self.__net_g is None:
+            self.load()
+        assert self.__net_g is not None
+
+        # モーフィングパラメータを辞書形式で返す
+        return {
+            "text": text,
+            "sdp_ratio": sdp_ratio,
+            "noise_scale": noise,
+            "noise_scale_w": noise_w,
+            "length_scale": length,
+            "language": language,
+            "hps": self.hyper_parameters,
+            "net_g": self.__net_g,
+            "device": self.device,
+            "assist_text": assist_text,
+            "assist_text_weight": assist_text_weight,
+            "style_vec": style_vector,
+            "given_phone": given_phone,
+            "given_tone": given_tone
+        }
 
     def infer(
         self,

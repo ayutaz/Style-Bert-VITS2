@@ -1,5 +1,6 @@
 from typing import Any, Optional, Union, cast
 
+import numpy as np
 import torch
 from numpy.typing import NDArray
 
@@ -196,6 +197,145 @@ def get_text(
     tone = torch.LongTensor(tone)
     language = torch.LongTensor(language)
     return bert, ja_bert, en_bert, phone, tone, language
+
+
+def prepare_input_data(
+    morphing_params: dict,
+    skip_start: bool = False,
+    skip_end: bool = False
+):
+    """
+    モーフィング用の入力データを準備する
+    :param morphing_params:
+    :param skip_start:
+    :param skip_end:
+    :return:
+    """
+    text = morphing_params['text']
+    language = morphing_params['language']
+    hps = morphing_params['hps']
+    device = morphing_params['device']
+    assist_text = morphing_params['assist_text']
+    assist_text_weight = morphing_params['assist_text_weight']
+    given_phone = morphing_params['given_phone']
+    given_tone = morphing_params['given_tone']
+    style_vec = morphing_params['style_vec']
+
+    is_jp_extra = hps.version.endswith("JP-Extra")
+    bert, ja_bert, en_bert, phones, tones, lang_ids = get_text(
+        text,
+        language,
+        hps,
+        device,
+        assist_text=assist_text,
+        assist_text_weight=assist_text_weight,
+        given_phone=given_phone,
+        given_tone=given_tone,
+    )
+    if skip_start:
+        phones = phones[3:]
+        tones = tones[3:]
+        lang_ids = lang_ids[3:]
+        bert = bert[:, 3:]
+        ja_bert = ja_bert[:, 3:]
+        en_bert = en_bert[:, 3:]
+    if skip_end:
+        phones = phones[:-2]
+        tones = tones[:-2]
+        lang_ids = lang_ids[:-2]
+        bert = bert[:, :-2]
+        ja_bert = ja_bert[:, :-2]
+        en_bert = en_bert[:, :-2]
+
+    x_tst = phones.to(device).unsqueeze(0)
+    tones = tones.to(device).unsqueeze(0)
+    lang_ids = lang_ids.to(device).unsqueeze(0)
+    bert = bert.to(device).unsqueeze(0)
+    ja_bert = ja_bert.to(device).unsqueeze(0)
+    en_bert = en_bert.to(device).unsqueeze(0)
+    x_tst_lengths = torch.LongTensor([phones.size(0)]).to(device)
+    style_vec_tensor = torch.from_numpy(style_vec).to(device).unsqueeze(0)
+
+    return {
+        'is_jp_extra': is_jp_extra,
+        'x_tst': x_tst,
+        'x_tst_lengths': x_tst_lengths,
+        'tones': tones,
+        'lang_ids': lang_ids,
+        'bert': bert,
+        'ja_bert': ja_bert,
+        'en_bert': en_bert,
+        'style_vec_tensor': style_vec_tensor,
+    }
+
+
+def morphing_infer(
+    morphing_params: dict,
+    input_data: dict,
+    speaker_id: int,
+) -> NDArray[np.float32]:
+    """
+    モーフィング用の推論
+    :param morphing_params:
+    :param input_data:
+    :param speaker_id:
+    :return:
+    """
+    # morphing_params から必要なパラメータを取り出す
+    sdp_ratio = morphing_params['sdp_ratio']
+    noise_scale = morphing_params['noise_scale']
+    noise_scale_w = morphing_params['noise_scale_w']
+    length_scale = morphing_params['length_scale']
+    net_g = morphing_params['net_g']
+    device = morphing_params['device']
+
+    # input_data から必要なデータを取り出す
+    is_jp_extra = input_data['is_jp_extra']
+    x_tst = input_data['x_tst']
+    x_tst_lengths = input_data['x_tst_lengths']
+    tones = input_data['tones']
+    lang_ids = input_data['lang_ids']
+    bert = input_data['bert']
+    ja_bert = input_data['ja_bert']
+    en_bert = input_data['en_bert']
+    style_vec_tensor = input_data['style_vec_tensor']
+
+    with torch.no_grad():
+        sid_tensor = torch.LongTensor([speaker_id]).to(device)
+        if is_jp_extra:
+            output = cast(SynthesizerTrnJPExtra, net_g).infer(
+                x_tst,
+                x_tst_lengths,
+                sid_tensor,
+                tones,
+                lang_ids,
+                ja_bert,
+                style_vec=style_vec_tensor,
+                sdp_ratio=sdp_ratio,
+                noise_scale=noise_scale,
+                noise_scale_w=noise_scale_w,
+                length_scale=length_scale,
+            )
+        else:
+            output = cast(SynthesizerTrn, net_g).infer(
+                x_tst,
+                x_tst_lengths,
+                sid_tensor,
+                tones,
+                lang_ids,
+                bert,
+                ja_bert,
+                en_bert,
+                style_vec=style_vec_tensor,
+                sdp_ratio=sdp_ratio,
+                noise_scale=noise_scale,
+                noise_scale_w=noise_scale_w,
+                length_scale=length_scale,
+            )
+        audio = output[0][0, 0].data.cpu().float().numpy()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return audio
 
 
 def infer(

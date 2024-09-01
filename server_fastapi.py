@@ -277,6 +277,11 @@ if __name__ == "__main__":
         base_model = next((m for m in loaded_models if m.config_path.parent.name == base_model_name), None)
         target_model = next((m for m in loaded_models if m.config_path.parent.name == target_model_name), None)
 
+        print(f"Base model name: {base_model_name}")
+        print(f"Target model name: {target_model_name}")
+        print(f"Base model: {base_model}")
+        print(f"Target model: {target_model}")
+
         if not base_model:
             raise_validation_error(f"base_model_name={base_model_name} not found", "base_model_name")
         if not target_model:
@@ -298,7 +303,6 @@ if __name__ == "__main__":
         try:
             # モーフィング処理
             frame_rate, morph_wave = base_model.morph_models(
-                target_model,
                 morph_ratio,
                 text,
                 base_speaker_id,
@@ -308,9 +312,6 @@ if __name__ == "__main__":
             print(f"Morph wave shape: {morph_wave.shape}")
             print(f"Morph wave min: {morph_wave.min()}, max: {morph_wave.max()}")
             print(f"Morph wave mean: {morph_wave.mean()}, std: {morph_wave.std()}")
-
-            # 音声情報の表示
-            logger.debug(f"frame_rate: {frame_rate}, morph_wave: {morph_wave}")
 
             logger.success("Morphed audio data generated successfully")
 
