@@ -74,22 +74,91 @@ class AudioResponse(Response):
     media_type = "audio/wav"
 
 
-loaded_models: list[TTSModel] = []
+class LazyLoadTTSModel:
+    def __init__(self, model_path, config_path, style_vec_path, device) -> None:
+        """
+        モデルの遅延読み込みを行うクラス
+        :param model_path:
+        :param config_path:
+        :param style_vec_path:
+        :param device:
+        """
+        self.model_path = model_path
+        self.config_path = config_path
+        self.style_vec_path = style_vec_path
+        self.device = device
+        self._model = None
+
+    def get_model(self) -> TTSModel:
+        """
+        モデルをロードして返す
+        :return:
+        """
+        if self._model is None:
+            self._model = TTSModel(
+                model_path=self.model_path,
+                config_path=self.config_path,
+                style_vec_path=self.style_vec_path,
+                device=self.device,
+            )
+            self._model.load()
+        return self._model
+
+    @property
+    def spk2id(self) -> dict[str, int]:
+        """
+        話者名から話者IDへのマッピングを取得
+        :return:
+        """
+        return self.get_model().spk2id
+
+    @property
+    def id2spk(self) -> dict[int, str]:
+        """
+        話者IDから話者名へのマッピングを取得
+        :return:
+        """
+        return self.get_model().id2spk
+
+    @property
+    def style2id(self) -> dict[str, int]:
+        """
+        スタイル名からスタイルIDへのマッピングを取得
+        :return:
+        """
+        return self.get_model().style2id
+
+
+loaded_models: list[LazyLoadTTSModel] = []
 
 
 def load_models(model_holder: TTSModelHolder):
     global loaded_models
     loaded_models = []
     for model_name, model_paths in model_holder.model_files_dict.items():
-        model = TTSModel(
+        lazy_model = LazyLoadTTSModel(
             model_path=model_paths[0],
             config_path=model_holder.root_dir / model_name / "config.json",
             style_vec_path=model_holder.root_dir / model_name / "style_vectors.npy",
             device=model_holder.device,
         )
-        # 起動時に全てのモデルを読み込むのは時間がかかりメモリを食うのでやめる
-        # model.load()
-        loaded_models.append(model)
+        loaded_models.append(lazy_model)
+
+
+def compare_models(model1: LazyLoadTTSModel, model2: LazyLoadTTSModel):
+    print(f"Comparing models: {model1.config_path.parent.name} vs {model2.config_path.parent.name}")
+    print(f"Model IDs same: {id(model1) == id(model2)}")
+    print(f"Config paths same: {model1.config_path == model2.config_path}")
+    print(f"Model paths same: {model1.model_path == model2.model_path}")
+
+    # モデルがロードされている場合、重みを比較
+    if model1._model is not None and model2._model is not None:
+        for (name1, param1), (name2, param2) in zip(model1._model.named_parameters(), model2._model.named_parameters()):
+            if not torch.allclose(param1, param2):
+                print(f"Parameters differ for {name1}")
+                break
+        else:
+            print("All parameters are the same")
 
 
 if __name__ == "__main__":
@@ -302,16 +371,26 @@ if __name__ == "__main__":
 
         try:
             # モーフィング処理
-            frame_rate, morph_wave = base_model.morph_models(
+            base_model_instance = base_model.get_model()
+            target_model_instance = target_model.get_model()
+
+            print("Morphing models...")
+
+            frame_rate, morph_wave = base_model_instance.morph_models(
+                target_model_instance,
                 morph_ratio,
                 text,
                 base_speaker_id,
-                target_speaker_id
+                target_speaker_id,
             )
 
             print(f"Morph wave shape: {morph_wave.shape}")
             print(f"Morph wave min: {morph_wave.min()}, max: {morph_wave.max()}")
             print(f"Morph wave mean: {morph_wave.mean()}, std: {morph_wave.std()}")
+
+            # モーフィング後の音声を一時的に保存
+            from scipy.io import wavfile
+            wavfile.write("morphed_audio.wav", frame_rate, morph_wave)
 
             logger.success("Morphed audio data generated successfully")
 

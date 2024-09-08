@@ -18,6 +18,7 @@ from style_bert_vits2.nlp import (
     extract_bert_feature,
 )
 from style_bert_vits2.nlp.symbols import SYMBOLS
+from style_gen import model
 
 
 def get_net_g(model_path: str, version: str, device: str, hps: HyperParameters):
@@ -201,11 +202,13 @@ def get_text(
 
 def prepare_input_data(
     morphing_params: dict,
+    base_model_data: dict,
     skip_start: bool = False,
     skip_end: bool = False
 ):
     """
     モーフィング用の入力データを準備する
+    :param base_model_data:
     :param morphing_params:
     :param skip_start:
     :param skip_end:
@@ -213,13 +216,13 @@ def prepare_input_data(
     """
     text = morphing_params['text']
     language = morphing_params['language']
-    hps = morphing_params['hps']
-    device = morphing_params['device']
     assist_text = morphing_params['assist_text']
     assist_text_weight = morphing_params['assist_text_weight']
     given_phone = morphing_params['given_phone']
     given_tone = morphing_params['given_tone']
-    style_vec = morphing_params['style_vec']
+    style_vec = base_model_data['style_vec']
+    hps = base_model_data['hps']
+    device = base_model_data['device']
 
     is_jp_extra = hps.version.endswith("JP-Extra")
     bert, ja_bert, en_bert, phones, tones, lang_ids = get_text(
@@ -271,11 +274,13 @@ def prepare_input_data(
 
 def morphing_infer(
     morphing_params: dict,
+    model_data: dict,
     input_data: dict,
     speaker_id: int,
 ) -> NDArray[np.float32]:
     """
     モーフィング用の推論
+    :param model_data:
     :param morphing_params:
     :param input_data:
     :param speaker_id:
@@ -286,8 +291,8 @@ def morphing_infer(
     noise_scale = morphing_params['noise_scale']
     noise_scale_w = morphing_params['noise_scale_w']
     length_scale = morphing_params['length_scale']
-    net_g = morphing_params['net_g']
-    device = morphing_params['device']
+    net_g = model_data['net_g']
+    device = model_data['device']
 
     # input_data から必要なデータを取り出す
     is_jp_extra = input_data['is_jp_extra']
