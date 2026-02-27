@@ -43,7 +43,7 @@ dependencies = [
 [project.optional-dependencies]
 torch = [
     "accelerate",
-    "torch>=2.1",
+    "torch>=2.4",
 ]
 
 [project.urls]
@@ -71,69 +71,87 @@ exclude = [".git", ".gitignore", ".gitattributes"]
 [tool.hatch.build.targets.wheel]
 packages = ["style_bert_vits2"]
 
-# for PyTorch inference
-[tool.hatch.envs.test]
-dependencies = [
-    "coverage[toml]>=6.5",
-    "pytest",
-    "scipy",
+[dependency-groups]
+# PyTorch CUDA 12.4 ランタイム
+cu124 = [
+    "accelerate",
+    "torch>=2.4",
+    "torchaudio>=2.4",
 ]
-features = ["torch"]
-[tool.hatch.envs.test.scripts]
-# Usage: `hatch run test:test`
-test = "pytest -s tests/test_main.py::test_synthesize_cpu"
-# Usage: `hatch run test:test-cuda`
-test-cuda = "pytest -s tests/test_main.py::test_synthesize_cuda"
-# Usage: `hatch run test:coverage`
-test-cov = "coverage run -m pytest -s tests/test_main.py::test_synthesize_cpu"
-# Usage: `hatch run test:cov-report`
-cov-report = ["- coverage combine", "coverage report"]
-# Usage: `hatch run test:cov`
-cov = ["test-cov", "cov-report"]
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11"]
 
-# for ONNX inference (without PyTorch dependency)
-[tool.hatch.envs.test-onnx]
-dependencies = [
-    "coverage[toml]>=6.5",
-    "pytest",
-    "scipy",
+# WebUI/APIサーバー依存
+webui = [
+    "gradio>=4.32",
+    "GPUtil",
+    "psutil",
+    "umap-learn",
+]
+
+# 学習パイプライン（cu124 + webui を含む）
+train = [
+    { include-group = "cu124" },
+    { include-group = "webui" },
+    "faster-whisper>=1.0.0",
+    "librosa==0.9.2",
+    "protobuf==4.25",
+    "punctuators",
+    "pyloudnorm",
+    "stable_ts",
+    "tensorboard",
+    "pyannote.audio>=3.1.0",
+]
+
+# 推論のみ（cu124 + webui を含む、学習ツール不要）
+infer = [
+    { include-group = "cu124" },
+    { include-group = "webui" },
+    "pyannote.audio>=3.1.0",
+]
+
+# ONNX変換・推論ツール
+onnx = [
+    "onnx",
+    "onnxconverter-common",
+    "onnxsim-prebuilt",
     "onnxruntime-directml; sys_platform == 'win32'",
     "onnxruntime-gpu; sys_platform != 'darwin'",
 ]
-[tool.hatch.envs.test-onnx.scripts]
-# Usage: `hatch run test-onnx:test`
-test = "pytest -s tests/test_main.py::test_synthesize_onnx_cpu"
-# Usage: `hatch run test-onnx:test-cuda`
-test-cuda = "pytest -s tests/test_main.py::test_synthesize_onnx_cuda"
-# Usage: `hatch run test-onnx:test-directml`
-test-directml = "pytest -s tests/test_main.py::test_synthesize_onnx_directml"
-# Usage: `hatch run test-onnx:test-coreml`
-test-coreml = "pytest -s tests/test_main.py::test_synthesize_onnx_coreml"
-# Usage: `hatch run test-onnx:coverage`
-test-cov = "coverage run -m pytest -s tests/test_main.py::test_synthesize_onnx_cpu"
-# Usage: `hatch run test-onnx:cov-report`
-cov-report = ["- coverage combine", "coverage report"]
-# Usage: `hatch run test-onnx:cov`
-cov = ["test-cov", "cov-report"]
-[[tool.hatch.envs.test-onnx.matrix]]
-python = ["3.9", "3.10", "3.11"]
 
-[tool.hatch.envs.style]
-detached = true
-dependencies = ["black[jupyter]", "isort"]
-[tool.hatch.envs.style.scripts]
-# Usage: `hatch run style:check`
-check = [
-    "black --check --diff .",
-    "isort --check-only --diff --profile black --gitignore --lai 2 . --sg \"Data/*\" --sg \"inputs/*\" --sg \"model_assets/*\" --sg \"static/*\"",
+# テスト
+test = [
+    "coverage[toml]>=6.5",
+    "pytest",
+    "scipy",
 ]
-# Usage: `hatch run style:fmt`
-fmt = [
-    "black .",
-    "isort --profile black --gitignore --lai 2 . --sg \"Data/*\" --sg \"inputs/*\" --sg \"model_assets/*\" --sg \"static/*\"",
-    "check",
+
+# コードスタイル
+style = [
+    "black[jupyter]",
+    "isort",
+]
+
+# 開発環境（全部入り）
+dev = [
+    { include-group = "train" },
+    { include-group = "onnx" },
+    { include-group = "test" },
+    { include-group = "style" },
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu124" },
+]
+torchaudio = [
+    { index = "pytorch-cu124" },
 ]
 
 [tool.coverage.run]

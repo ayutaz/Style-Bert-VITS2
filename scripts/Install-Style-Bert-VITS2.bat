@@ -82,8 +82,8 @@ if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 echo --------------------------------------------------
 echo Setting up Python environment...
 echo --------------------------------------------------
-echo Executing: call Setup-Python.bat ".\lib\python" ".\Style-Bert-VITS2\venv"
-call Setup-Python.bat ".\lib\python" ".\Style-Bert-VITS2\venv"
+echo Executing: call Setup-Python.bat ".\lib\python" ".\Style-Bert-VITS2\.venv"
+call Setup-Python.bat ".\lib\python" ".\Style-Bert-VITS2\.venv"
 if !errorlevel! neq 0 ( popd & exit /b !errorlevel! )
 
 @REM Style-Bert-VITS2フォルダに移動
@@ -96,8 +96,8 @@ pushd Style-Bert-VITS2
 echo --------------------------------------------------
 echo Activating the virtual environment...
 echo --------------------------------------------------
-echo Executing: call ".\venv\Scripts\activate.bat"
-call ".\venv\Scripts\activate.bat"
+echo Executing: call ".\.venv\Scripts\activate.bat"
+call ".\.venv\Scripts\activate.bat"
 if !errorlevel! neq 0 ( popd & exit /b !errorlevel! )
 
 echo --------------------------------------------------
@@ -108,17 +108,10 @@ pip install uv
 if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 
 echo --------------------------------------------------
-echo Installing PyTorch...
+echo Installing dependencies...
 echo --------------------------------------------------
-echo Executing: uv pip install "torch<2.4" "torchaudio<2.4" --index-url https://download.pytorch.org/whl/cu118
-uv pip install "torch<2.4" "torchaudio<2.4" --index-url https://download.pytorch.org/whl/cu118
-if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
-
-echo --------------------------------------------------
-echo Installing other dependencies...
-echo --------------------------------------------------
-echo Executing: uv pip install -r requirements.txt
-uv pip install -r requirements.txt
+echo Executing: uv sync --group train
+uv sync --group train
 if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 
 echo ----------------------------------------

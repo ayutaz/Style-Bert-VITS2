@@ -14,10 +14,11 @@ Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対
 
 ### 環境構築
 ```bash
-uv venv venv && venv\Scripts\activate
-uv pip install "torch<2.4" "torchaudio<2.4" --index-url https://download.pytorch.org/whl/cu118
-uv pip install -r requirements.txt
-python initialize.py  # BERTモデル・デフォルトTTSモデルのダウンロード
+uv sync                              # 全依存インストール（開発環境フル）
+uv sync --group train                # 学習環境のみ
+uv sync --group infer                # 推論環境のみ
+uv sync --only-group style           # スタイルチェックのみ
+python initialize.py                  # BERTモデル・デフォルトTTSモデルのダウンロード
 ```
 
 ### 起動
@@ -30,21 +31,15 @@ python server_editor.py --inbrowser  # エディターUI
 
 ### テスト
 ```bash
-# hatch経由
-hatch run test:test                  # PyTorch CPU テスト
-hatch run test:test-cuda             # PyTorch CUDA テスト
-hatch run test-onnx:test             # ONNX CPU テスト
-hatch run test-onnx:test-directml   # ONNX DirectML テスト (Windows)
-
-# 直接実行（単一テスト）
-pytest -s tests/test_main.py::test_synthesize_cpu
-pytest -s tests/test_main.py::test_synthesize_onnx_cuda
+uv run pytest -s tests/test_main.py::test_synthesize_cpu
+uv run pytest -s tests/test_main.py::test_synthesize_cuda
 ```
 
 ### コードスタイル
 ```bash
-hatch run style:check   # black + isort チェック
-hatch run style:fmt     # black + isort 自動修正
+uv run black --check .                                    # blackチェック
+uv run isort --check-only --profile black .               # isortチェック
+uv run black . && uv run isort --profile black .          # 自動修正
 ```
 
 ### 学習パイプライン (CLI)
