@@ -25,10 +25,11 @@ mkdir -p /storage/sbv2
 cd /storage/sbv2
 git clone https://github.com/litagin02/Style-Bert-VITS2.git
 ```
-環境構築（デフォルトはPyTorch 1.x系、Python 3.9の模様）
+環境構築
 ```bash
 cd /storage/sbv2/Style-Bert-VITS2
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && pip install -r requirements.txt
+pip install uv
+uv sync --group train
 ```
 事前学習済みモデル等のダウンロード、またパスを`/notebooks/`以下のものに設定
 ```bash

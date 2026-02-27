@@ -5,10 +5,7 @@
 ```bash
 git clone https://github.com/litagin02/Style-Bert-VITS2.git
 cd Style-Bert-VITS2
-python -m venv venv
-venv\Scripts\activate
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install -r requirements.txt
+uv sync --group train
 ```
 
 Then download the necessary models and the default TTS model, and set the global paths.
