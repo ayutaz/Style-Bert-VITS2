@@ -35,13 +35,13 @@ echo --------------------------------------------------
 git pull
 if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 
-@REM 仮想環境のpip requirements.txtを更新
+@REM 仮想環境の依存関係を更新
 
 echo --------------------------------------------------
 echo Activating virtual environment...
 echo --------------------------------------------------
-echo Executing: call ".\venv\Scripts\activate.bat"
-call ".\venv\Scripts\activate.bat"
+echo Executing: call ".\.venv\Scripts\activate.bat"
+call ".\.venv\Scripts\activate.bat"
 if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 
 echo --------------------------------------------------
@@ -54,8 +54,8 @@ if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 echo --------------------------------------------------
 echo Updating dependencies...
 echo --------------------------------------------------
-echo Executing: uv pip install -U -r requirements.txt
-uv pip install -U -r requirements.txt
+echo Executing: uv sync --group train
+uv sync --group train
 if !errorlevel! neq 0 ( pause & popd & exit /b !errorlevel! )
 
 echo ----------------------------------------

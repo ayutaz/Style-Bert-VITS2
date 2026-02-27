@@ -95,10 +95,11 @@ RUN $PIP_INSTALL torch torchvision torchaudio --index-url https://download.pytor
 
 RUN $PIP_INSTALL jupyterlab
 
-# Install requirements.txt from the project
-COPY requirements.txt /tmp/requirements.txt
-RUN $PIP_INSTALL -r /tmp/requirements.txt
-RUN rm /tmp/requirements.txt
+# Install dependencies from pyproject.toml
+RUN $PIP_INSTALL uv
+COPY pyproject.toml uv.lock /tmp/
+RUN uv pip install --system --no-cache-dir --group train --project /tmp
+RUN rm /tmp/pyproject.toml /tmp/uv.lock
 
 # ==================================================================
 # Startup
