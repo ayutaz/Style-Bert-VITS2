@@ -13,7 +13,6 @@ from style_bert_vits2.nlp.japanese.pyopenjtalk_worker.worker_common import (
     send_data,
 )
 
-
 # To make it as fast as possible
 # Probably faster than calling getattr every time
 PYOPENJTALK_FUNC_DICT = {

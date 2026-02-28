@@ -12,7 +12,6 @@ from style_bert_vits2.nlp import bert_models, onnx_bert_models
 from style_bert_vits2.nlp.japanese.g2p import text_to_sep_kata
 from style_bert_vits2.utils import get_onnx_device_options
 
-
 if TYPE_CHECKING:
     import torch
 

@@ -3,7 +3,6 @@ import socket
 from enum import IntEnum, auto
 from typing import Any, Final
 
-
 WORKER_PORT: Final[int] = 7861
 HEADER_SIZE: Final[int] = 4
 

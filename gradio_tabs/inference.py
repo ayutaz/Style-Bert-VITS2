@@ -26,7 +26,6 @@ from style_bert_vits2.nlp.japanese.normalizer import normalize_text
 from style_bert_vits2.tts_model import NullModelParam, TTSModelHolder
 from style_bert_vits2.utils import torch_device_to_onnx_providers
 
-
 # pyopenjtalk_worker を起動
 ## pyopenjtalk_worker は TCP ソケットサーバーのため、ここで起動する
 pyopenjtalk.initialize_worker()

@@ -24,7 +24,6 @@ from style_bert_vits2.nlp.japanese.user_dict.part_of_speech_data import (
 )
 from style_bert_vits2.nlp.japanese.user_dict.word_model import UserDictWord, WordTypes
 
-
 # root_dir = engine_root()
 # save_dir = get_save_dir()
 

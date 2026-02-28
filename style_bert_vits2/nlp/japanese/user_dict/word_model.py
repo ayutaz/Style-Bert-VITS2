@@ -11,7 +11,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, validator
 
-
 USER_DICT_MIN_PRIORITY = 0
 USER_DICT_MAX_PRIORITY = 10
 

@@ -11,7 +11,6 @@ from style_bert_vits2.constants import Languages
 from style_bert_vits2.nlp import bert_models, onnx_bert_models
 from style_bert_vits2.utils import get_onnx_device_options
 
-
 if TYPE_CHECKING:
     import torch
 

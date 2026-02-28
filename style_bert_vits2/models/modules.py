@@ -11,7 +11,6 @@ from style_bert_vits2.models import commons
 from style_bert_vits2.models.attentions import Encoder
 from style_bert_vits2.models.transforms import piecewise_rational_quadratic_transform
 
-
 LRELU_SLOPE = 0.1
 
 

@@ -28,7 +28,6 @@ from style_bert_vits2.constants import DEFAULT_BERT_MODEL_PATHS, Languages
 from style_bert_vits2.logging import logger
 from style_bert_vits2.nlp import onnx_bert_models
 
-
 if TYPE_CHECKING:
     import torch
 
@@ -160,10 +159,14 @@ def load_tokenizer(
         # ライブラリ利用時、特例的にこの状況で ONNX 版 BERT トークナイザーがロードされている場合はそのまま返す
         ## ONNX 版 BERT トークナイザー単独で g2p 処理を行うために必要 (各言語の g2p.py はこの関数に依存している)
         ## 設計的には微妙だがこの方が差異を吸収できて手っ取り早い
-        if DEFAULT_BERT_MODEL_PATHS[language].exists() is False and onnx_bert_models.is_tokenizer_loaded(language):  # fmt: skip
+        if DEFAULT_BERT_MODEL_PATHS[
+            language
+        ].exists() is False and onnx_bert_models.is_tokenizer_loaded(language):
             return onnx_bert_models.load_tokenizer(language)
-        assert DEFAULT_BERT_MODEL_PATHS[language].exists(), \
-            f"The default {language.name} BERT tokenizer does not exist on the file system. Please specify the path to the pre-trained model."  # fmt: skip
+        assert DEFAULT_BERT_MODEL_PATHS[language].exists(), (
+            f"The default {language.name} BERT tokenizer does not exist on the file system."
+            " Please specify the path to the pre-trained model."
+        )
         pretrained_model_name_or_path = str(DEFAULT_BERT_MODEL_PATHS[language])
 
     # BERT トークナイザーをロードし、辞書に格納して返す

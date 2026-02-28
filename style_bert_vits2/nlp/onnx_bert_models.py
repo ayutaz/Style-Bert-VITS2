@@ -27,7 +27,6 @@ from transformers import (
 from style_bert_vits2.constants import DEFAULT_ONNX_BERT_MODEL_PATHS, Languages
 from style_bert_vits2.logging import logger
 
-
 # 各言語ごとのロード済みの BERT モデルを格納する辞書
 __loaded_models: dict[Languages, onnxruntime.InferenceSession] = {}
 
@@ -38,14 +37,11 @@ __loaded_tokenizers: dict[
 ] = {}
 
 
-def load_model(
-    language: Languages,
-    pretrained_model_name_or_path: Optional[str] = None,
-    onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = [("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"})],
-    cache_dir: Optional[str] = None,
-    revision: str = "main",
-    enable_cpu_mem_arena: bool | None = None,
-) -> onnxruntime.InferenceSession:  # fmt: skip
+def load_model(language: Languages, pretrained_model_name_or_path: Optional[str] = None, onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = [
+    ("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"})
+], cache_dir: Optional[str] = None, revision: str = "main", enable_cpu_mem_arena: (
+    bool | None
+) = None,) -> onnxruntime.InferenceSession:  # fmt: skip
     """
     指定された言語の ONNX 版 BERT モデルをロードし、ロード済みの ONNX 版 BERT モデルを返す。
     一度ロードされていれば、ロード済みの ONNX 版 BERT モデルを即座に返す。

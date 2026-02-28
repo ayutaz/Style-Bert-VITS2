@@ -152,6 +152,12 @@ tests = ["tests", "*/style-bert-vits2/tests"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
+[tool.black]
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+
 [tool.ruff]
 extend-select = ["I"]
 

@@ -2,7 +2,6 @@ import re
 
 import inflect
 
-
 __INFLECT = inflect.engine()
 __COMMA_NUMBER_PATTERN = re.compile(r"([0-9][0-9\,]+[0-9])")
 __DECIMAL_NUMBER_PATTERN = re.compile(r"([0-9]+\.[0-9]+)")

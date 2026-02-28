@@ -27,6 +27,9 @@ from style_bert_vits2.logging import logger
 from style_bert_vits2.models.hyper_parameters import HyperParameters
 from style_bert_vits2.voice import adjust_voice
 
+DEFAULT_ONNX_PROVIDERS: list[Union[str, tuple[str, dict[str, Any]]]] = [
+    ("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"})
+]
 
 if TYPE_CHECKING:
     from style_bert_vits2.models.models import SynthesizerTrn
@@ -61,8 +64,10 @@ class TTSModel:
         config_path: Union[Path, HyperParameters],
         style_vec_path: Union[Path, NDArray[Any]],
         device: str = "cpu",
-        onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = [("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"})],
-    ) -> None:  # fmt: skip
+        onnx_providers: Sequence[
+            Union[str, tuple[str, dict[str, Any]]]
+        ] = DEFAULT_ONNX_PROVIDERS,
+    ) -> None:
         """
         Style-Bert-VITS2 の音声合成モデルを初期化する。
         この時点ではモデルはロードされていない (明示的にロードしたい場合は model.load() を呼び出す)。
@@ -77,7 +82,9 @@ class TTSModel:
 
         self.model_path: Path = model_path
         self.device: str = device
-        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = onnx_providers  # fmt: skip
+        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = (
+            onnx_providers
+        )
 
         # ONNX 形式のモデルかどうか
         if self.model_path.suffix == ".onnx":
@@ -212,9 +219,13 @@ class TTSModel:
             ## ONNX モデルの作成時にすでに onnxsim により最適化されていることから、ロード高速化のため最適化を無効にする
             ## DmlExecutionProvider が先頭に指定されているときのみ、DirectML 推論の高速化のためすべての最適化を有効にする
             if first_provider_name == "DmlExecutionProvider":
-                sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL  # fmt: skip
+                sess_options.graph_optimization_level = (
+                    onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+                )
             else:
-                sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL  # fmt: skip
+                sess_options.graph_optimization_level = (
+                    onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+                )
             ## エラー以外のログを出力しない
             ## 本来は log_severity_level = 3 だけで効くはずだが、なぜか CUDA 系のログが抑制できないので set_default_logger_severity() も呼び出している
             sess_options.log_severity_level = 3
@@ -618,7 +629,9 @@ class TTSModelHolder:
 
         self.root_dir: Path = model_root_dir
         self.device: str = device
-        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = onnx_providers  # fmt: skip
+        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = (
+            onnx_providers
+        )
         self.ignore_onnx: bool = ignore_onnx
         self.model_files_dict: dict[str, list[Path]] = {}
         self.current_model: Optional[TTSModel] = None

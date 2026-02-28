@@ -1,7 +1,6 @@
 import pickle
 from pathlib import Path
 
-
 CMU_DICT_PATH = Path(__file__).parent / "cmudict.rep"
 CACHE_PATH = Path(__file__).parent / "cmudict_cache.pickle"
 

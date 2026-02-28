@@ -5,7 +5,6 @@ from num2words import num2words
 
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
-
 # 記号類の正規化マップ
 __REPLACE_MAP = {
     "：": ",",
