@@ -31,7 +31,7 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 
 ### 動作環境
 
-Windows コマンドプロンプト・WSL2・Linux(Ubuntu Desktop)での動作を確認しています。NVidiaのGPUが無い場合でも音声合成とマージは可能です。
+Windows コマンドプロンプト・WSL2・Linux(Ubuntu Desktop)での動作を確認しています。NVidiaのGPUが無い場合でも音声合成は可能です。
 
 ### インストール
 
@@ -84,11 +84,6 @@ API仕様は起動後に`/docs`にて確認ください。
 また音声合成エディターのAPIサーバーは`uv run python server_editor.py`で起動します。があまりまだ整備をしていません。[エディターのリポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)から必要な最低限のAPIしか現在は実装していません。
 
 音声合成エディターのウェブデプロイについては[このDockerfile](Dockerfile.deploy)を参考にしてください。
-
-### マージ
-
-2つのモデルを、「声質」「声の高さ」「感情表現」「テンポ」の4点で混ぜ合わせて、新しいモデルを作ったり、また「あるモデルに、別の2つのモデルの差分を足す」等の操作ができます。
-`uv run python app.py`の「マージ」タブから、2つのモデルを選択してマージすることができます。単独タブは`uv run python -m gradio_tabs.merge`でも開けます。
 
 ## Bert-VITS2との関係
 

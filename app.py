@@ -6,7 +6,6 @@ import torch
 
 from config import get_path_config
 from gradio_tabs.inference import create_inference_app
-from gradio_tabs.merge import create_merge_app
 from style_bert_vits2.constants import GRADIO_THEME, VERSION
 from style_bert_vits2.nlp.japanese import pyopenjtalk_worker
 from style_bert_vits2.nlp.japanese.user_dict import update_dict
@@ -47,11 +46,7 @@ model_holder = TTSModelHolder(
 
 with gr.Blocks(theme=GRADIO_THEME) as app:
     gr.Markdown(f"# Style-Bert-VITS2 WebUI (version {VERSION})")
-    with gr.Tabs():
-        with gr.Tab("音声合成"):
-            create_inference_app(model_holder=model_holder)
-        with gr.Tab("マージ"):
-            create_merge_app(model_holder=model_holder)
+    create_inference_app(model_holder=model_holder)
 
 app.launch(
     server_name=args.host,

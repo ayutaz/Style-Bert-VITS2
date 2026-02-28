@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対応のText-to-Speech (TTS) システム。感情や発話スタイルを連続的に制御できる点が特徴。Python >=3.9、ライセンスはAGPL-3.0。
+Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対応のText-to-Speech (TTS) システム。感情や発話スタイルを連続的に制御できる点が特徴。Python 3.12（`.python-version`で固定）、ライセンスはAGPL-3.0。
 
 - Pythonライブラリ (`pip install style-bert-vits2`) としても、WebUI/APIサーバーとしても利用可能
 - 対応言語: JP (日本語), EN (英語), ZH (中国語)
@@ -22,9 +22,9 @@ python initialize.py                  # BERTモデル・デフォルトTTSモデ
 
 ### 起動
 ```bash
-uv run python app.py                        # WebUI (Gradio、音声合成+マージ)
+uv run python app.py                        # WebUI (Gradio、音声合成)
 uv run python app.py --device cpu           # CPUモード
-uv run python server_fastapi.py             # FastAPI サーバー (port 5000)
+uv run python server_fastapi.py             # FastAPI サーバー (port 6345)
 uv run python server_editor.py --inbrowser  # エディターUI
 ```
 
@@ -83,13 +83,12 @@ uv run black . && uv run isort --profile black .          # 自動修正
 
 ### WebUI: `gradio_tabs/`
 
-`app.py` がGradioアプリのエントリポイント。2つのタブ:
+`app.py` がGradioアプリのエントリポイント。
 - `inference.py`: 音声合成
-- `merge.py`: モデルマージ
 
 ### APIサーバー
 
-- `server_fastapi.py`: FastAPIベースのREST API (ポート5000)。`/docs`でSwagger UI
+- `server_fastapi.py`: FastAPIベースのREST API (ポート6345、`config.yml`の`server.port`で変更可能)。`/docs`でSwagger UI
 - `server_editor.py`: エディター専用API
 
 ### 設定ファイル

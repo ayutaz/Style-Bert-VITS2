@@ -91,12 +91,17 @@ def load_model(
 
     # BERT モデルをロードし、辞書に格納して返す
     ## 英語のみ DebertaV2Model でロードする必要がある
+    ## dtype=torch.float32 を明示的に指定し、config.json の torch_dtype 設定
+    ## (例: float16) に関わらず常に float32 でロードする (transformers 5.x 対応)
+    import torch
+
     start_time = time.time()
     if language == Languages.EN:
         __loaded_models[language] = cast(
             DebertaV2Model,
             DebertaV2Model.from_pretrained(
                 pretrained_model_name_or_path,
+                dtype=torch.float32,
                 device_map=device_map,
                 cache_dir=cache_dir,
                 revision=revision,
@@ -105,6 +110,7 @@ def load_model(
     else:
         __loaded_models[language] = AutoModelForMaskedLM.from_pretrained(
             pretrained_model_name_or_path,
+            dtype=torch.float32,
             device_map=device_map,
             cache_dir=cache_dir,
             revision=revision,

@@ -7,7 +7,7 @@ name = "style-bert-vits2"
 dynamic = ["version"]
 description = "Style-Bert-VITS2: Bert-VITS2 with more controllable voice styles."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = "AGPL-3.0"
 keywords = []
 authors = [
@@ -16,9 +16,7 @@ authors = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [

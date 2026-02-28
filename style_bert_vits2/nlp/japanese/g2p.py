@@ -117,10 +117,12 @@ def text_to_sep_kata(
 
     for parts in parsed:
         # word: 実際の単語の文字列
-        # yomi: その読み、但し無声化サインの`’`は除去
-        word, yomi = replace_punctuation(parts["string"]), parts["pron"].replace(
-            "’", ""
-        )
+        # yomi: その読み、但し無声化サインの`'`は除去
+        # pyopenjtalk-plus は U+2019 (右シングル引用符) を無声化記号に使うため両方除去
+        word = replace_punctuation(parts["string"])
+        yomi = parts["pron"].replace("'", "").replace("\u2019", "")
+        # pyopenjtalk-plus は pron に全角記号（！、？、、等）を返すことがあるので半角に正規化
+        yomi = replace_punctuation(yomi)
         """
         ここで `yomi` の取りうる値は以下の通りのはず。
         - `word` が通常単語 → 通常の読み（カタカナ）
@@ -134,7 +136,7 @@ def text_to_sep_kata(
         処理すべきは `yomi` が `、` の場合のみのはず。
         """
         assert yomi != "", f"Empty yomi: {word}"
-        if yomi == "、":
+        if yomi == ",":
             # word は正規化されているので、`.`, `,`, `!`, `'`, `-`, `--` のいずれか
             if not set(word).issubset(set(PUNCTUATIONS)):  # 記号繰り返しか判定
                 # ここは pyopenjtalk が読めない文字等のときに起こる
@@ -151,9 +153,8 @@ def text_to_sep_kata(
             else:
                 # yomi は元の記号のままに変更
                 yomi = word
-        elif yomi == "？":
-            assert word == "?", f"yomi `？` comes from: {word}"
-            yomi = "?"
+        elif yomi == "?":
+            assert word == "?", f"yomi `?` comes from: {word}"
         sep_text.append(word)
         sep_kata.append(yomi)
 
