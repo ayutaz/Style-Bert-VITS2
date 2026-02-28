@@ -97,15 +97,7 @@ if isinstance(style_vec_path, np.ndarray):
 
 ---
 
-## 5. API拡張ポイント
-
-### 現状の制約
-| | server_fastapi.py | server_editor.py |
-|---|---|---|
-| スタイル名指定 | `style` (Query) | `style` (Body) |
-| スタイル重み | `style_weight` (Query) | `styleWeight` (Body) |
-| 音声参照 | `reference_audio_path` (Query) | なし |
-| **直接ベクトル指定** | **不可** | **不可** |
+## 5. 推論パイプライン拡張ポイント
 
 ### 推奨拡張
 **最小変更**: `TTSModel.infer()` に `style_vector_override: Optional[NDArray] = None` パラメータを追加
@@ -258,7 +250,6 @@ gradio_tabs/
   style_operations.py (NEW) — モーフィング + ベクトル演算のGradioタブ
 
 app.py — 新タブの追加
-server_fastapi.py — style_vectorパラメータ追加（オプショナル）
 ```
 
 ### style_ops.py の主要関数

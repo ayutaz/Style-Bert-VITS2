@@ -11,8 +11,7 @@ Phase 1: コアライブラリ層        ← 他の全フェーズの基盤
 Phase 2: 推論パイプライン拡張    ← Phase 1 に依存
 Phase 3: モーフィングUI          ← Phase 1, 2 に依存
 Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存
-Phase 5: API拡張                 ← Phase 1, 2 に依存
-Phase 6: 統合・品質保証          ← 全フェーズ完了後
+Phase 5: 統合・品質保証          ← 全フェーズ完了後
 ```
 
 ```
@@ -248,111 +247,36 @@ else:
 
 ---
 
-## Phase 5: API拡張
-
-**目的**: モーフィング/ベクトル演算結果を外部アプリケーションから利用可能にする
-
-### 5.1 server_fastapi.py
-
-#### 既存エンドポイント拡張: `/voice`
-```python
-style_vector: Optional[str] = Query(
-    None,
-    description="256次元スタイルベクトル(JSON配列)。指定時はstyle/style_weightを無視"
-)
-```
-
-#### 新規エンドポイント: `/style/morph`
-```
-POST /style/morph
-{
-    "model_name": "jvnv-F1-jp",
-    "style_a": "Happy",
-    "style_b": "Sad",
-    "t": 0.3,
-    "method": "slerp"
-}
-→ { "style_vector": [0.12, -0.34, ...], "norm_ratio": 1.02 }
-```
-
-#### 新規エンドポイント: `/style/arithmetic`
-```
-POST /style/arithmetic
-{
-    "model_name": "jvnv-F1-jp",
-    "operation": "diff_transfer",
-    "base": "Neutral",
-    "source": "Neutral",
-    "target": "Happy",
-    "scale": 1.0,
-    "clip_norm": true,
-    "clip_factor": 2.0
-}
-→ { "style_vector": [0.12, -0.34, ...], "norm_ratio": 1.45 }
-```
-
-### 5.2 server_editor.py
-
-#### SynthesisRequest 拡張
-```python
-class SynthesisRequest(BaseModel):
-    ...
-    styleVector: Optional[list[float]] = None  # NEW: 256次元ベクトル直接指定
-```
-
-### 完了条件
-- [ ] `/voice` に `style_vector` パラメータ追加
-- [ ] `/style/morph` エンドポイント実装
-- [ ] `/style/arithmetic` エンドポイント実装
-- [ ] `SynthesisRequest` に `styleVector` 追加
-- [ ] Swagger UIでのドキュメント確認
-- [ ] APIテスト
-
----
-
-## Phase 6: 統合・品質保証
+## Phase 5: 統合・品質保証
 
 **目的**: 全フェーズの統合テストとドキュメント整備
 
-### 6.1 app.py への統合
+### 5.1 app.py への統合
 ```python
 # app.py に追加
 from gradio_tabs.style_operations import create_style_operation_app
 
-with gr.Tabs():
-    with gr.Tab("音声合成"):
-        create_inference_app(model_holder=model_holder)
-    with gr.Tab("データセット作成"):
-        create_dataset_app()
-    with gr.Tab("学習"):
-        create_train_app()
-    with gr.Tab("スタイル作成"):
-        create_style_vectors_app()
-    with gr.Tab("スタイル操作"):                          # NEW
-        create_style_operation_app(model_holder=model_holder)  # NEW
-    with gr.Tab("マージ"):
-        create_merge_app(model_holder=model_holder)
-    with gr.Tab("ONNX変換"):
-        create_onnx_app(model_holder=model_holder)
+with gr.Blocks(theme=GRADIO_THEME) as app:
+    gr.Markdown(f"# Style-Bert-VITS2 WebUI (version {VERSION})")
+    create_inference_app(model_holder=model_holder)
+    create_style_operation_app(model_holder=model_holder)  # NEW
 ```
 
-### 6.2 テスト
+### 5.2 テスト
 - [ ] `tests/test_style_ops.py` — ユニットテスト
 - [ ] モーフィングUI手動テスト — 複数モデルで音声生成確認
 - [ ] ベクトル演算UI手動テスト — 各演算モードの動作確認
-- [ ] APIエンドポイントテスト — curl/httpie での動作確認
-- [ ] 既存テストの回帰確認 — `hatch run test:test` がパス
+- [ ] 既存テストの回帰確認 — `uv run pytest` がパス
 - [ ] ONNX推論での動作確認
 - [ ] エッジケース — NaN/Inf、極端なスケール値、スタイルが1つしかないモデル
 
-### 6.3 コードスタイル
-- [ ] `hatch run style:check` がパス
+### 5.3 コードスタイル
+- [ ] `uv run black --check .` がパス
 - [ ] docstring追加（日本語、Google style）
 
-### 6.4 ドキュメント
+### 5.4 ドキュメント
 - [ ] `docs/CHANGELOG.md` にリリースノート追加
 - [ ] WebUIの使い方説明（Accordion内のMarkdown）
-- [ ] APIのSwaggerドキュメント確認
 
 ---
 
@@ -364,10 +288,8 @@ with gr.Tabs():
 | `tests/test_style_ops.py` | **新規** | 1 |
 | `style_bert_vits2/tts_model.py` | 変更 | 2 |
 | `gradio_tabs/style_operations.py` | **新規** | 3, 4 |
-| `app.py` | 変更 | 6 |
-| `server_fastapi.py` | 変更 | 5 |
-| `server_editor.py` | 変更 | 5 |
-| `docs/CHANGELOG.md` | 変更 | 6 |
+| `app.py` | 変更 | 5 |
+| `docs/CHANGELOG.md` | 変更 | 5 |
 
 ---
 

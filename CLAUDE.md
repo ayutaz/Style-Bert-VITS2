@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対応のText-to-Speech (TTS) システム。感情や発話スタイルを連続的に制御できる点が特徴。Python 3.12（`.python-version`で固定）、ライセンスはAGPL-3.0。
 
-- Pythonライブラリ (`pip install style-bert-vits2`) としても、WebUI/APIサーバーとしても利用可能
+- Pythonライブラリ (`pip install style-bert-vits2`) としても、WebUIとしても利用可能
 - 対応言語: JP (日本語), EN (英語), ZH (中国語)
 - JP-Extraモデル: 日本語特化の高品質モデルバリアント（JP以外の言語は使用不可）
 - **このブランチは推論専用**: 学習・前処理・データセット作成機能は削除済み
@@ -24,8 +24,6 @@ python initialize.py                  # BERTモデル・デフォルトTTSモデ
 ```bash
 uv run python app.py                        # WebUI (Gradio、音声合成)
 uv run python app.py --device cpu           # CPUモード
-uv run python server_fastapi.py             # FastAPI サーバー (port 6345)
-uv run python server_editor.py --inbrowser  # エディターUI
 ```
 
 ### テスト
@@ -86,15 +84,10 @@ uv run black . && uv run isort --profile black .          # 自動修正
 `app.py` がGradioアプリのエントリポイント。
 - `inference.py`: 音声合成
 
-### APIサーバー
-
-- `server_fastapi.py`: FastAPIベースのREST API (ポート6345、`config.yml`の`server.port`で変更可能)。`/docs`でSwagger UI
-- `server_editor.py`: エディター専用API
-
 ### 設定ファイル
 
-- `configs/default_paths.yml`: データセット・アセットのルートパス定義
-- `config.yml` (実行時生成): `default_config.yml` から生成されるユーザー設定
+- `configs/default_paths.yml`: アセットのルートパス定義
+- `config.py`: パス設定の読み込み (`get_path_config()`)
 
 ### モデルアセット構造
 

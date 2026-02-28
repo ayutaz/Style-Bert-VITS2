@@ -102,7 +102,6 @@ initial_md = """
 
 - Ver 2.5のアップデート後に上記モデルをダウンロードするには、`uv run python initialize.py`を実行するか、手動でダウンロードして`model_assets`ディレクトリに配置してください。
 
-- **エディター版**のほうが実際に読み上げさせるには使いやすいかもしれません。`uv run python server_editor.py --inbrowser`で起動できます。
 """
 
 terms_of_use_md = """

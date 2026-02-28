@@ -21,7 +21,6 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 - 入力されたテキストの内容をもとに感情豊かな音声を生成する[Bert-VITS2](https://github.com/fishaudio/Bert-VITS2)のv2.1とJapanese-Extraを元に、感情や発話スタイルを強弱込みで自由に制御できるようにしたものです。
 - 音声合成のみに使う場合は、グラボがなくてもCPUで動作します。
 - 音声合成のみに使う場合、Pythonライブラリとして`pip install style-bert-vits2`でインストールできます。
-- 他との連携に使えるAPIサーバーも同梱しています ([@darai0512](https://github.com/darai0512) 様によるPRです、ありがとうございます)。
 - 元々「楽しそうな文章は楽しそうに、悲しそうな文章は悲しそうに」読むのがBert-VITS2の強みですので、スタイル指定がデフォルトでも感情豊かな音声を生成することができます。
 
 
@@ -50,12 +49,8 @@ uv run python initialize.py          # 必要なモデルとデフォルトTTS�
 
 ### 音声合成
 
-音声合成エディターは`uv run python server_editor.py --inbrowser`すると起動します（`--device cpu`でCPUモードで起動）。画面内で各セリフごとに設定を変えて原稿を作ったり、保存や読み込みや辞書の編集等ができます。
+音声合成WebUIは`uv run python app.py`で起動します（`--device cpu`でCPUモードで起動）。
 インストール時にデフォルトのモデルがダウンロードされているので、学習していなくてもそれを使うことができます。
-
-エディター部分は[別リポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)に分かれています。
-
-音声合成WebUIは`uv run python app.py`で起動します。音声合成単独タブは`uv run python -m gradio_tabs.inference`でも開けます。
 
 音声合成に必要なモデルファイルたちの構造は以下の通りです（手動で配置する必要はありません）。
 ```
@@ -70,18 +65,6 @@ model_assets
     ├── ...
 ```
 このように、推論には`config.json`と`*.safetensors`と`style_vectors.npy`が必要です。モデルを共有する場合は、この3つのファイルを共有してください。
-
-### API Server
-
-`uv run python server_fastapi.py`でAPIサーバーが起動します。
-API仕様は起動後に`/docs`にて確認ください。
-
-- 入力文字数はデフォルトで100文字が上限となっています。これは`config.yml`の`server.limit`で変更できます。
-- デフォルトではCORS設定を全てのドメインで許可しています。できる限り、`config.yml`の`server.origins`の値を変更し、信頼できるドメインに制限ください(キーを消せばCORS設定を無効にできます)。
-
-また音声合成エディターのAPIサーバーは`uv run python server_editor.py`で起動します。があまりまだ整備をしていません。[エディターのリポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)から必要な最低限のAPIしか現在は実装していません。
-
-音声合成エディターのウェブデプロイについては[このDockerfile](Dockerfile.deploy)を参考にしてください。
 
 ## Bert-VITS2との関係
 

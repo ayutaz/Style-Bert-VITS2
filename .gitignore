@@ -9,7 +9,6 @@ dist/
 ._*
 
 /*.yml
-!/default_config.yml
 /bert/*/*.bin
 /bert/*/*.h5
 /bert/*/*.model
@@ -38,8 +37,6 @@ dist/
 
 safetensors.ipynb
 *.wav
-/static/
-
 # pyopenjtalk's dictionary
 *.dic
 
