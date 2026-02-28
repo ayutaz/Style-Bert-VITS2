@@ -4,33 +4,47 @@
 
 ---
 
+## 進捗サマリー
+
+| Phase | 内容 | 状態 | 進捗 |
+|-------|------|------|------|
+| **Phase 1** | コアライブラリ層 | **完了** | 100% |
+| **Phase 2** | 推論パイプライン拡張 | 未着手 | 0% |
+| **Phase 3** | モーフィングUI | 未着手 | 0% |
+| **Phase 4** | ベクトル演算UI | 未着手 | 0% |
+| **Phase 5** | 統合・品質保証 | 未着手 | 0% |
+
+**現在のボトルネック**: Phase 2 が未実装のため Phase 3・4 に進めない。
+
+---
+
 ## フェーズ概要
 
 ```
-Phase 1: コアライブラリ層        ← 他の全フェーズの基盤
-Phase 2: 推論パイプライン拡張    ← Phase 1 に依存
+Phase 1: コアライブラリ層        ← 完了
+Phase 2: 推論パイプライン拡張    ← Phase 1 に依存（次にやるべき）
 Phase 3: モーフィングUI          ← Phase 1, 2 に依存
 Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存
 Phase 5: 統合・品質保証          ← 全フェーズ完了後
 ```
 
 ```
- Phase 1 ─┬─→ Phase 3 (モーフィングUI)
-           │
-           ├─→ Phase 4 (ベクトル演算UI)    ──→ Phase 6 (統合・QA)
-           │
-           └─→ Phase 5 (API拡張)
-           │
- Phase 2 ──┘
+ Phase 1 (完了) ─┬─→ Phase 3 (モーフィングUI)
+                  │                              ──→ Phase 5 (統合・QA)
+                  ├─→ Phase 4 (ベクトル演算UI)
+                  │
+ Phase 2 ────────┘
 ```
 
 ---
 
-## Phase 1: コアライブラリ層
+## Phase 1: コアライブラリ層 — 完了
 
 **目的**: スタイルベクトル演算の基盤ユーティリティを実装する
 
-### 新規ファイル: `style_bert_vits2/style_ops.py`
+**実装コミット**: `e9b18db` feat: Phase 1 スタイルベクトル演算モジュール (style_ops.py) を実装
+
+### 実装済みファイル: `style_bert_vits2/style_ops.py` (290行)
 
 #### 1.1 補間関数
 | 関数 | 説明 |
@@ -64,17 +78,18 @@ Phase 5: 統合・品質保証          ← 全フェーズ完了後
 | `save_style_vectors(vectors, style2id, model_name, root_dir)` | 演算結果を新しいスタイルとして保存 |
 
 ### 完了条件
-- [ ] 全関数の実装
-- [ ] 単体テスト (`tests/test_style_ops.py`)
-  - SLERP: t=0でv0、t=1でv1、t=0.5で中間点
-  - SLERP: ほぼ同方向でLERPフォールバック
-  - ベクトル演算: 基本演算の正確性
-  - ノルムクリッピング: 上限超過時にクリップされる
-  - バリデーション: NaN/Inf/ゼロベクトルの検出
+- [x] 全関数の実装 (12関数)
+- [x] 単体テスト (`tests/test_style_ops.py`, 30テストケース)
+  - [x] SLERP: t=0でv0、t=1でv1、t=0.5で中間点
+  - [x] SLERP: ほぼ同方向でLERPフォールバック
+  - [x] ベクトル演算: 基本演算の正確性
+  - [x] ノルムクリッピング: 上限超過時にクリップされる
+  - [x] バリデーション: NaN/Inf/ゼロベクトルの検出
+  - [x] I/O: load/save round-trip
 
 ---
 
-## Phase 2: 推論パイプライン拡張
+## Phase 2: 推論パイプライン拡張 — 未着手
 
 **目的**: カスタムスタイルベクトルを推論パイプラインに注入可能にする
 
@@ -95,6 +110,8 @@ def infer(
 - 後方互換性を完全に保持（既存の呼び出しは影響なし）
 
 #### 2.2 スタイルベクトル取得ロジックの変更
+
+現在のコード (`tts_model.py:420-427`):
 ```python
 # 変更前
 if reference_audio_path is None:
@@ -102,8 +119,10 @@ if reference_audio_path is None:
     style_vector = self.get_style_vector(style_id, style_weight)
 else:
     style_vector = self.get_style_vector_from_audio(...)
+```
 
-# 変更後
+変更後:
+```python
 if style_vector_override is not None:
     style_vector = style_vector_override
 elif reference_audio_path is not None:
@@ -121,7 +140,7 @@ else:
 
 ---
 
-## Phase 3: モーフィングUI (Gradio タブ)
+## Phase 3: モーフィングUI (Gradio タブ) — 未着手
 
 **目的**: 2つのスタイル間のSLERP補間をGUIで操作できるようにする
 
@@ -180,7 +199,7 @@ else:
 
 ---
 
-## Phase 4: ベクトル演算UI (Gradio タブ)
+## Phase 4: ベクトル演算UI (Gradio タブ) — 未着手
 
 **目的**: スタイルベクトルの算術操作をGUIで行えるようにする
 
@@ -247,7 +266,7 @@ else:
 
 ---
 
-## Phase 5: 統合・品質保証
+## Phase 5: 統合・品質保証 — 未着手
 
 **目的**: 全フェーズの統合テストとドキュメント整備
 
@@ -263,7 +282,7 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 ```
 
 ### 5.2 テスト
-- [ ] `tests/test_style_ops.py` — ユニットテスト
+- [ ] `tests/test_style_ops.py` — ユニットテスト回帰確認
 - [ ] モーフィングUI手動テスト — 複数モデルで音声生成確認
 - [ ] ベクトル演算UI手動テスト — 各演算モードの動作確認
 - [ ] 既存テストの回帰確認 — `uv run pytest` がパス
@@ -282,14 +301,14 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 
 ## 変更ファイル一覧
 
-| ファイル | 変更種別 | Phase |
-|----------|----------|-------|
-| `style_bert_vits2/style_ops.py` | **新規** | 1 |
-| `tests/test_style_ops.py` | **新規** | 1 |
-| `style_bert_vits2/tts_model.py` | 変更 | 2 |
-| `gradio_tabs/style_operations.py` | **新規** | 3, 4 |
-| `app.py` | 変更 | 5 |
-| `docs/CHANGELOG.md` | 変更 | 5 |
+| ファイル | 変更種別 | Phase | 状態 |
+|----------|----------|-------|------|
+| `style_bert_vits2/style_ops.py` | **新規** | 1 | **完了** |
+| `tests/test_style_ops.py` | **新規** | 1 | **完了** |
+| `style_bert_vits2/tts_model.py` | 変更 | 2 | 未着手 |
+| `gradio_tabs/style_operations.py` | **新規** | 3, 4 | 未着手 |
+| `app.py` | 変更 | 5 | 未着手 |
+| `docs/CHANGELOG.md` | 変更 | 5 | 未着手 |
 
 ---
 
