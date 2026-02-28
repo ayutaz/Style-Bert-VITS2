@@ -1,3 +1,20 @@
+"""スタイルベクトル演算式のパーサーモジュール。
+
+eval()を使わない安全なカスタム式パーサーを提供する。
+入力文字列を ``(係数, スタイル名)`` ペアのリストに変換し、
+ベクトル演算UIのカスタム式モードで使用される。
+
+対応する文法::
+
+    expression = term (('+' | '-') term)*
+    term = [sign] [number '*'] style_name
+
+Examples:
+    >>> from style_bert_vits2.expression_parser import parse_expression
+    >>> parse_expression("Happy + 0.5 * Sad", ["Happy", "Neutral", "Sad"])
+    [(1.0, 'Happy'), (0.5, 'Sad')]
+"""
+
 from __future__ import annotations
 
 import re

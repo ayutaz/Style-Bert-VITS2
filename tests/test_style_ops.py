@@ -1,24 +1,25 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
-from pathlib import Path
 
 from style_bert_vits2.style_ops import (
-    lerp,
-    slerp,
-    vector_add,
-    vector_sub,
-    vector_mean,
-    vector_scale,
-    vector_diff_transfer,
     clip_norm,
     compute_norm_ratio,
-    validate_style_vector,
+    lerp,
     load_style_vectors,
+    pca_project_2d,
+    prepare_plot_data,
     save_style_vectors,
+    slerp,
+    validate_style_vector,
+    vector_add,
+    vector_diff_transfer,
+    vector_mean,
+    vector_scale,
+    vector_sub,
 )
-
 
 DIM = 256
 
@@ -79,9 +80,7 @@ class TestSlerp:
         norm0 = np.linalg.norm(v0)
         norm1 = np.linalg.norm(v1)
         expected_norm = (norm0 + norm1) / 2.0
-        np.testing.assert_allclose(
-            np.linalg.norm(result), expected_norm, rtol=1e-5
-        )
+        np.testing.assert_allclose(np.linalg.norm(result), expected_norm, rtol=1e-5)
 
     def test_nearly_parallel_falls_back_to_lerp(self):
         """ほぼ同方向のベクトルではLERPにフォールバックする。"""
@@ -108,9 +107,7 @@ class TestSlerp:
         result = slerp(0.5, v0, v1)
         # 直交の場合、t=0.5で結果は45度方向
         expected_norm = 1.0  # (1+1)/2
-        np.testing.assert_allclose(
-            np.linalg.norm(result), expected_norm, rtol=1e-10
-        )
+        np.testing.assert_allclose(np.linalg.norm(result), expected_norm, rtol=1e-10)
 
 
 # ============================================================
@@ -312,13 +309,9 @@ class TestUtilities:
 
     def test_load_style_vectors(self, tmp_path, rng):
         model_name = "test_model"
-        vectors, style2id, _ = self._create_test_model(
-            tmp_path, model_name, rng
-        )
+        vectors, style2id, _ = self._create_test_model(tmp_path, model_name, rng)
 
-        loaded_vectors, loaded_style2id = load_style_vectors(
-            model_name, tmp_path
-        )
+        loaded_vectors, loaded_style2id = load_style_vectors(model_name, tmp_path)
 
         np.testing.assert_allclose(loaded_vectors, vectors)
         assert loaded_style2id == style2id
@@ -329,21 +322,15 @@ class TestUtilities:
 
         # 新しいベクトルとstyle2idで保存
         new_style2id = {"Neutral": 0, "Happy": 1, "Angry": 2, "Whisper": 3}
-        new_vectors = rng.standard_normal(
-            (len(new_style2id), DIM)
-        ).astype(np.float32)
+        new_vectors = rng.standard_normal((len(new_style2id), DIM)).astype(np.float32)
 
         save_style_vectors(new_vectors, new_style2id, model_name, tmp_path)
 
         # ファイルを直接読み込んで検証
-        saved_vectors = np.load(
-            tmp_path / model_name / "style_vectors.npy"
-        )
+        saved_vectors = np.load(tmp_path / model_name / "style_vectors.npy")
         np.testing.assert_allclose(saved_vectors, new_vectors)
 
-        with open(
-            tmp_path / model_name / "config.json", encoding="utf-8"
-        ) as f:
+        with open(tmp_path / model_name / "config.json", encoding="utf-8") as f:
             config = json.load(f)
         assert config["data"]["style2id"] == new_style2id
         assert config["data"]["num_styles"] == len(new_style2id)
@@ -351,17 +338,13 @@ class TestUtilities:
     def test_save_preserves_other_config_fields(self, tmp_path, rng):
         """save時に既存のconfig.jsonの他のフィールドが保持される。"""
         model_name = "test_model"
-        _, _, original_config = self._create_test_model(
-            tmp_path, model_name, rng
-        )
+        _, _, original_config = self._create_test_model(tmp_path, model_name, rng)
 
         new_style2id = {"Neutral": 0}
         new_vectors = rng.standard_normal((1, DIM)).astype(np.float32)
         save_style_vectors(new_vectors, new_style2id, model_name, tmp_path)
 
-        with open(
-            tmp_path / model_name / "config.json", encoding="utf-8"
-        ) as f:
+        with open(tmp_path / model_name / "config.json", encoding="utf-8") as f:
             config = json.load(f)
 
         # 他のフィールドが保持されていることを確認
@@ -374,14 +357,73 @@ class TestUtilities:
         self._create_test_model(tmp_path, model_name, rng)
 
         style2id = {"Neutral": 0, "Happy": 1, "Sad": 2, "Angry": 3}
-        vectors = rng.standard_normal(
-            (len(style2id), DIM)
-        ).astype(np.float32)
+        vectors = rng.standard_normal((len(style2id), DIM)).astype(np.float32)
 
         save_style_vectors(vectors, style2id, model_name, tmp_path)
-        loaded_vectors, loaded_style2id = load_style_vectors(
-            model_name, tmp_path
-        )
+        loaded_vectors, loaded_style2id = load_style_vectors(model_name, tmp_path)
 
         np.testing.assert_allclose(loaded_vectors, vectors)
         assert loaded_style2id == style2id
+
+
+# ============================================================
+# Visualization Tests
+# ============================================================
+
+
+class TestVisualization:
+    """PCA可視化ヘルパーのテスト。"""
+
+    def test_pca_project_2d_shape(self):
+        """PCA射影の出力shapeが正しい。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((5, 256))
+        result = pca_project_2d(vectors)
+        assert result.shape == (5, 2)
+
+    def test_pca_project_2d_single_vector(self):
+        """1ベクトルの場合はゼロ座標を返す。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((1, 256))
+        result = pca_project_2d(vectors)
+        assert result.shape == (1, 2)
+        np.testing.assert_allclose(result, 0.0)
+
+    def test_prepare_plot_data_count(self):
+        """ポイント数がスタイル数+結果で正しい。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((3, 256))
+        style2id = {"A": 0, "B": 1, "C": 2}
+        result_vec = rng.standard_normal(256)
+        points = prepare_plot_data(vectors, style2id, result_vec)
+        assert len(points) == 4  # 3 styles + 1 result
+
+    def test_prepare_plot_data_no_result(self):
+        """結果ベクトルなしの場合。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((3, 256))
+        style2id = {"A": 0, "B": 1, "C": 2}
+        points = prepare_plot_data(vectors, style2id)
+        assert len(points) == 3
+        assert all(not p["is_result"] for p in points)
+
+    def test_prepare_plot_data_coordinates_range(self):
+        """座標が5〜95の範囲内に正規化されている。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((5, 256))
+        style2id = {chr(65 + i): i for i in range(5)}
+        points = prepare_plot_data(vectors, style2id)
+        for p in points:
+            assert 5.0 <= p["x"] <= 95.0
+            assert 5.0 <= p["y"] <= 95.0
+
+    def test_prepare_plot_data_result_flag(self):
+        """結果ベクトルのis_resultフラグが正しい。"""
+        rng = np.random.default_rng(42)
+        vectors = rng.standard_normal((2, 256))
+        style2id = {"X": 0, "Y": 1}
+        result_vec = rng.standard_normal(256)
+        points = prepare_plot_data(vectors, style2id, result_vec, "My Result")
+        result_points = [p for p in points if p["is_result"]]
+        assert len(result_points) == 1
+        assert result_points[0]["label"] == "My Result"

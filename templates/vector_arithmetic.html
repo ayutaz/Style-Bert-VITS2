@@ -15,6 +15,36 @@
     </nav>
 
     <div class="morphing-container">
+        <!-- 使い方ガイド -->
+        <details class="card">
+            <summary class="guide-summary">使い方ガイド</summary>
+            <div class="guide-content">
+                <h3>ベクトル演算とは</h3>
+                <p>スタイルベクトルの算術操作で新しい声質を合成する機能です。</p>
+                <h3>演算モード</h3>
+                <dl>
+                    <dt><strong>差分転写</strong>: A + scale × (B − C)</dt>
+                    <dd>ベーススタイルAに、ソースCからターゲットBへの変化を適用します。<br>
+                    例: 「Neutralな声にHappyとSadの差分を加えて感情を転写」</dd>
+
+                    <dt><strong>加重平均</strong>: w₁×A + w₂×B + w₃×C</dt>
+                    <dd>複数スタイルの重み付き混合。正規化オンで重みの合計が1.0に。<br>
+                    例: 「HappyとSadを半々で混ぜた声」</dd>
+
+                    <dt><strong>スケーリング</strong>: scale × A</dt>
+                    <dd>スタイルの強さを調整。1.0が元の強さ。<br>
+                    例: 「Happyの特徴を1.5倍に強調」</dd>
+
+                    <dt><strong>カスタム式</strong></dt>
+                    <dd>スタイル名と四則演算で自由に記述。<br>
+                    例: <code>Happy - 0.3 * Neutral + 0.5 * Sad</code></dd>
+                </dl>
+                <h3>ノルムクリッピング</h3>
+                <p>演算結果のベクトルが大きくなりすぎると音質が崩れます。「ノルムクリッピング有効」をオンにすると、
+                参照スタイルの平均ノルムの指定倍率を上限にクリップされます（推奨: 2.0倍）。</p>
+            </div>
+        </details>
+
         <!-- セクション1: モデル選択 -->
         <div class="card">
             <h2>モデル選択</h2>
@@ -64,6 +94,13 @@
             <div id="va-norm-display">
                 <span class="norm-indicator">ノルム比: -</span>
             </div>
+            <button type="button" class="btn-secondary" style="margin-top: 12px;"
+                    hx-post="/api/vector/visualize"
+                    hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                    hx-target="#vector-plot">
+                2D可視化
+            </button>
+            <div id="vector-plot"></div>
         </div>
 
         <!-- セクション4: 音声合成 -->

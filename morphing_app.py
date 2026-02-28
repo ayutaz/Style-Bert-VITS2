@@ -1,4 +1,12 @@
-"""HTMXベースのモーフィングUIバックエンドAPIルーター。"""
+"""HTMXベースのモーフィングUIバックエンドAPIルーター。
+
+2つのスタイルベクトル間の補間（LERP/SLERP）操作を提供する。
+FastAPI APIRouterとして実装され、app.pyからマウントされる。
+
+Note:
+    ``_morphing_state`` モジュール変数でセッション中の状態（読み込み済み
+    モデル名、スタイルベクトル等）を保持する。シングルユーザー前提の設計。
+"""
 
 from __future__ import annotations
 
@@ -18,6 +26,7 @@ from style_bert_vits2.style_ops import (
     compute_norm_ratio,
     lerp,
     load_style_vectors,
+    prepare_plot_data,
     save_style_vectors,
     slerp,
     validate_style_vector,
@@ -48,7 +57,15 @@ async def morphing_page(request: Request):
 
 @router.get("/api/morphing/model-files", response_class=HTMLResponse)
 async def get_model_files(request: Request, model_name: str):
-    """指定モデルの .safetensors ファイルを option タグで返す。"""
+    """指定モデルの .safetensors ファイルを option タグで返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        model_name: モデル名（クエリパラメータ）。
+
+    Returns:
+        ``<option>`` タグを連結したHTMLフラグメント。
+    """
     model_holder = request.app.state.model_holder
     # models_info からモデルを探す
     options_html = ""
@@ -68,7 +85,20 @@ async def load_model(
     model_name: str = Form(...),
     model_path: str = Form(...),
 ):
-    """モデルのスタイルベクトルを読み込み、スタイル選択肢を返す。"""
+    """モデルのスタイルベクトルを読み込み、スタイル選択肢を返す。
+
+    読み込んだベクトルとスタイル名マッピングを ``_morphing_state`` に保存し、
+    スタイル選択UIのHTMLフラグメントを返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        model_name: モデル名。
+        model_path: モデルファイル（.safetensors）のパス。
+
+    Returns:
+        スタイル選択肢を含むHTML部分テンプレート。
+        読み込み失敗時はエラーメッセージのHTMLを返す。
+    """
     model_holder = request.app.state.model_holder
     try:
         vectors, style2id = load_style_vectors(model_name, model_holder.root_dir)
@@ -95,7 +125,18 @@ async def compute_norm(
     method: str = Form(...),
     ratio: float = Form(...),
 ):
-    """補間結果のノルム比を計算して返す。"""
+    """補間結果のノルム比を計算して返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        style_a: 補間元スタイル名。
+        style_b: 補間先スタイル名。
+        method: 補間方式。``"slerp"`` または ``"lerp"``。
+        ratio: 補間比率（0.0〜1.0）。
+
+    Returns:
+        ノルム比インジケーターを含むHTML部分テンプレート。
+    """
     vectors = _morphing_state["vectors"]
     style2id = _morphing_state["style2id"]
 
@@ -131,7 +172,25 @@ async def synthesize(
     language: str = Form(...),
     speaker_id: int = Form(...),
 ):
-    """補間ベクトルで音声合成し、base64エンコードした音声を返す。"""
+    """補間ベクトルで音声合成し、base64エンコードした音声を返す。
+
+    LERP/SLERPで補間したスタイルベクトルを使って音声合成を実行し、
+    結果をbase64エンコードしたWAVデータとして返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        style_a: 補間元スタイル名。
+        style_b: 補間先スタイル名。
+        method: 補間方式。``"slerp"`` または ``"lerp"``。
+        ratio: 補間比率（0.0〜1.0）。
+        text: 合成するテキスト。
+        language: 言語コード（``"JP"``, ``"EN"``, ``"ZH"``）。
+        speaker_id: 話者ID。
+
+    Returns:
+        オーディオプレイヤーを含むHTML部分テンプレート。
+        バリデーションエラー時はエラーメッセージのHTMLを返す。
+    """
     vectors = _morphing_state["vectors"]
     style2id = _morphing_state["style2id"]
     model_name = _morphing_state["model_name"]
@@ -186,7 +245,22 @@ async def save_style(
     ratio: float = Form(...),
     style_name: str = Form(...),
 ):
-    """補間結果を新スタイルとして保存する。"""
+    """補間結果を新スタイルとして保存する。
+
+    補間ベクトルにclip_normを適用した上で、新しいスタイル名として
+    style_vectors.npyに追記保存する。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        style_a: 補間元スタイル名。
+        style_b: 補間先スタイル名。
+        method: 補間方式。``"slerp"`` または ``"lerp"``。
+        ratio: 補間比率（0.0〜1.0）。
+        style_name: 新しいスタイルの名前。
+
+    Returns:
+        保存成功メッセージまたはエラーメッセージを含むHTML。
+    """
     vectors = _morphing_state["vectors"]
     style2id = _morphing_state["style2id"]
     model_name = _morphing_state["model_name"]
@@ -223,4 +297,51 @@ async def save_style(
 
     return HTMLResponse(
         content=f'<div class="success">スタイル "{style_name}" を保存しました</div>'
+    )
+
+
+@router.post("/api/morphing/visualize", response_class=HTMLResponse)
+async def visualize(
+    request: Request,
+    style_a: str = Form(...),
+    style_b: str = Form(...),
+    method: str = Form(...),
+    ratio: float = Form(...),
+):
+    """補間結果を含むスタイルベクトルの2Dプロットを返す。
+
+    全スタイルベクトルと補間結果ベクトルをPCAで2次元に射影し、
+    散布図データとしてテンプレートに渡す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        style_a: 補間元スタイル名。
+        style_b: 補間先スタイル名。
+        method: 補間方式。``"slerp"`` または ``"lerp"``。
+        ratio: 補間比率（0.0〜1.0）。
+
+    Returns:
+        スタイルプロットを含むHTML部分テンプレート。
+    """
+    vectors = _morphing_state["vectors"]
+    style2id = _morphing_state["style2id"]
+
+    if vectors is None or style2id is None:
+        return HTMLResponse(
+            content='<div class="error">モデルをロードしてください</div>'
+        )
+
+    vec_a = vectors[style2id[style_a]]
+    vec_b = vectors[style2id[style_b]]
+
+    if method == "slerp":
+        result = slerp(ratio, vec_a, vec_b)
+    else:
+        result = lerp(ratio, vec_a, vec_b)
+
+    points = prepare_plot_data(vectors, style2id, result, f"{style_a}↔{style_b}")
+
+    return templates.TemplateResponse(
+        "partials/style_plot.html",
+        {"request": request, "points": points},
     )

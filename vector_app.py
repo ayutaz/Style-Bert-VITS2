@@ -1,4 +1,12 @@
-"""HTMXベースのベクトル演算UIバックエンドAPIルーター。"""
+"""HTMXベースのベクトル演算UIバックエンドAPIルーター。
+
+差分転写・重み付き平均・スケーリング・カスタム式の4モードを提供する。
+FastAPI APIRouterとして実装され、app.pyからマウントされる。
+
+Note:
+    ``_vector_state`` モジュール変数でセッション中の状態（読み込み済み
+    モデル名、スタイルベクトル等）を保持する。シングルユーザー前提の設計。
+"""
 
 from __future__ import annotations
 
@@ -19,6 +27,7 @@ from style_bert_vits2.style_ops import (
     clip_norm,
     compute_norm_ratio,
     load_style_vectors,
+    prepare_plot_data,
     save_style_vectors,
     validate_style_vector,
     vector_diff_transfer,
@@ -121,7 +130,15 @@ async def vector_arithmetic_page(request: Request):
 
 @router.get("/api/vector/model-files", response_class=HTMLResponse)
 async def get_model_files(request: Request, model_name: str):
-    """指定モデルの .safetensors ファイルを option タグで返す。"""
+    """指定モデルの .safetensors ファイルを option タグで返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        model_name: モデル名（クエリパラメータ）。
+
+    Returns:
+        ``<option>`` タグを連結したHTMLフラグメント。
+    """
     model_holder = request.app.state.model_holder
     options_html = ""
     for info in model_holder.models_info:
@@ -140,7 +157,20 @@ async def load_model(
     model_name: str = Form(...),
     model_path: str = Form(...),
 ):
-    """モデルのスタイルベクトルを読み込み、スタイル選択肢を返す。"""
+    """モデルのスタイルベクトルを読み込み、スタイル選択肢を返す。
+
+    読み込んだベクトルとスタイル名マッピングを ``_vector_state`` に保存し、
+    スタイル選択UIのHTMLフラグメントを返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。
+        model_name: モデル名。
+        model_path: モデルファイル（.safetensors）のパス。
+
+    Returns:
+        スタイル選択肢を含むHTML部分テンプレート。
+        読み込み失敗時はエラーメッセージのHTMLを返す。
+    """
     model_holder = request.app.state.model_holder
     try:
         vectors, style2id = load_style_vectors(model_name, model_holder.root_dir)
@@ -161,7 +191,19 @@ async def load_model(
 
 @router.post("/api/vector/compute-norm", response_class=HTMLResponse)
 async def compute_norm(request: Request):
-    """演算結果のノルム比を計算して返す。"""
+    """演算結果のノルム比を計算して返す。
+
+    フォームデータからベクトル演算を実行し、結果のノルム比を計算する。
+    clip_enabledがオンの場合はクリッピングを適用する。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。フォームデータに
+            演算モード・パラメータ・clip設定を含む。
+
+    Returns:
+        ノルム比インジケーターを含むHTML部分テンプレート。
+        エラー時はエラーメッセージのHTMLを返す。
+    """
     vectors = _vector_state["vectors"]
     style2id = _vector_state["style2id"]
 
@@ -191,7 +233,19 @@ async def compute_norm(request: Request):
 
 @router.post("/api/vector/synthesize", response_class=HTMLResponse)
 async def synthesize(request: Request):
-    """演算結果ベクトルで音声合成し、base64エンコードした音声を返す。"""
+    """演算結果ベクトルで音声合成し、base64エンコードした音声を返す。
+
+    フォームデータからベクトル演算を実行し、結果ベクトルを使って
+    音声合成を行う。結果はbase64エンコードしたWAVデータとして返す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。フォームデータに
+            演算モード・パラメータ・clip設定・テキスト・言語・話者IDを含む。
+
+    Returns:
+        オーディオプレイヤーを含むHTML部分テンプレート。
+        エラー時はエラーメッセージのHTMLを返す。
+    """
     vectors = _vector_state["vectors"]
     style2id = _vector_state["style2id"]
     model_name = _vector_state["model_name"]
@@ -243,7 +297,18 @@ async def synthesize(request: Request):
 
 @router.post("/api/vector/save-style", response_class=HTMLResponse)
 async def save_style(request: Request):
-    """演算結果を新スタイルとして保存する。"""
+    """演算結果を新スタイルとして保存する。
+
+    演算結果にclip_normを適用した上で、新しいスタイル名として
+    style_vectors.npyに追記保存する。保存時は常にクリッピングを適用する。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。フォームデータに
+            演算モード・パラメータ・clip_factor・style_nameを含む。
+
+    Returns:
+        保存成功メッセージまたはエラーメッセージを含むHTML。
+    """
     vectors = _vector_state["vectors"]
     style2id = _vector_state["style2id"]
     model_name = _vector_state["model_name"]
@@ -283,4 +348,46 @@ async def save_style(request: Request):
 
     return HTMLResponse(
         content=f'<div class="success">スタイル "{style_name}" を保存しました</div>'
+    )
+
+
+@router.post("/api/vector/visualize", response_class=HTMLResponse)
+async def visualize(request: Request):
+    """演算結果を含むスタイルベクトルの2Dプロットを返す。
+
+    全スタイルベクトルと演算結果ベクトルをPCAで2次元に射影し、
+    散布図データとしてテンプレートに渡す。
+
+    Args:
+        request: FastAPIリクエストオブジェクト。フォームデータに
+            演算モード・パラメータ・clip設定を含む。
+
+    Returns:
+        スタイルプロットを含むHTML部分テンプレート。
+        エラー時はエラーメッセージのHTMLを返す。
+    """
+    vectors = _vector_state["vectors"]
+    style2id = _vector_state["style2id"]
+
+    if vectors is None or style2id is None:
+        return HTMLResponse(
+            content='<div class="error">モデルをロードしてください</div>'
+        )
+
+    try:
+        form = await request.form()
+        form_dict = dict(form)
+        result = _compute_result_vector(form_dict, vectors, style2id)
+
+        if form_dict.get("clip_enabled") == "on":
+            clip_factor = float(form_dict.get("clip_factor", "2.0"))
+            result = clip_norm(result, vectors, clip_factor)
+
+        points = prepare_plot_data(vectors, style2id, result, "演算結果")
+    except (ValueError, KeyError) as e:
+        return HTMLResponse(content=f'<div class="error">{e}</div>')
+
+    return templates.TemplateResponse(
+        "partials/style_plot.html",
+        {"request": request, "points": points},
     )

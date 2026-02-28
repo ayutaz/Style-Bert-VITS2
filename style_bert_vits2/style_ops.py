@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 # ============================================================
 # 1.1 Interpolation Functions
 # ============================================================
@@ -287,3 +286,80 @@ def save_style_vectors(
     config["data"]["num_styles"] = len(style2id)
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
+
+
+# ============================================================
+# 1.5 Visualization Functions
+# ============================================================
+
+
+def pca_project_2d(vectors: np.ndarray) -> np.ndarray:
+    """スタイルベクトルをPCAで2次元に射影する。
+
+    Args:
+        vectors: スタイルベクトル群。shape (n, 256)。n >= 2 である必要がある。
+
+    Returns:
+        2次元座標。shape (n, 2)。
+    """
+    if vectors.shape[0] < 2:
+        # 1ベクトルの場合は原点に配置
+        return np.zeros((vectors.shape[0], 2))
+
+    centered = vectors - vectors.mean(axis=0)
+    # SVD で主成分を抽出
+    U, S, Vt = np.linalg.svd(centered, full_matrices=False)
+    # 上位2成分に射影
+    return centered @ Vt[:2].T
+
+
+def prepare_plot_data(
+    vectors: np.ndarray,
+    style2id: dict[str, int],
+    result_vector: np.ndarray | None = None,
+    result_label: str = "結果",
+) -> list[dict]:
+    """可視化用の正規化済みプロットデータを準備する。
+
+    PCA射影後、座標を5〜95の範囲に正規化する。
+
+    Args:
+        vectors: スタイルベクトル群。shape (num_styles, 256)。
+        style2id: スタイル名→インデックスのマッピング。
+        result_vector: 演算結果ベクトル（オプション）。shape (256,)。
+        result_label: 結果ベクトルのラベル。
+
+    Returns:
+        プロットデータのリスト。各要素は
+        {"x": float, "y": float, "label": str, "is_result": bool}。
+    """
+    labels = list(style2id.keys())
+    is_result_flags = [False] * len(labels)
+
+    all_vecs = vectors
+    if result_vector is not None:
+        all_vecs = np.vstack([vectors, result_vector.reshape(1, -1)])
+        labels.append(result_label)
+        is_result_flags.append(True)
+
+    coords = pca_project_2d(all_vecs)
+
+    # 座標を 5〜95 の範囲に正規化
+    min_vals = coords.min(axis=0)
+    max_vals = coords.max(axis=0)
+    range_vals = max_vals - min_vals
+    range_vals[range_vals == 0] = 1.0  # ゼロ除算防止
+    normalized = 5.0 + 90.0 * (coords - min_vals) / range_vals
+
+    points = []
+    for i, (x, y) in enumerate(normalized):
+        points.append(
+            {
+                "x": round(float(x), 2),
+                "y": round(float(y), 2),
+                "label": labels[i],
+                "is_result": is_result_flags[i],
+            }
+        )
+
+    return points

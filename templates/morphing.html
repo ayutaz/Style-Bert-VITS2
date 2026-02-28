@@ -15,6 +15,36 @@
     </nav>
 
     <div class="morphing-container">
+        <!-- 使い方ガイド -->
+        <details class="card">
+            <summary class="guide-summary">使い方ガイド</summary>
+            <div class="guide-content">
+                <h3>モーフィングとは</h3>
+                <p>2つのスタイル間を連続的に補間し、中間的な声質を生成する機能です。</p>
+                <h3>使い方</h3>
+                <ol>
+                    <li><strong>モデル選択</strong>: 使用するTTSモデルとモデルファイルを選んで「ロード」</li>
+                    <li><strong>スタイル設定</strong>: 補間する2つのスタイル（A, B）を選択</li>
+                    <li><strong>補間設定</strong>: SLERP（推奨）またはLERPを選び、補間率スライダーで調整
+                        <ul>
+                            <li>0.0 = スタイルAのみ、1.0 = スタイルBのみ</li>
+                            <li>SLERP: 球面線形補間（方向を考慮、自然な補間）</li>
+                            <li>LERP: 線形補間（シンプル）</li>
+                        </ul>
+                    </li>
+                    <li><strong>音声合成</strong>: テキストを入力して「合成」ボタンで音声を生成</li>
+                    <li><strong>保存</strong>: 気に入った補間結果は新しいスタイル名をつけて保存可能</li>
+                </ol>
+                <h3>ノルム安全インジケータ</h3>
+                <p>補間結果のベクトルノルムが元のスタイルと比べてどの程度離れているかを表示します。</p>
+                <ul>
+                    <li><strong>安全</strong>（緑）: ノルム比 ≤ 1.5 — 問題なし</li>
+                    <li><strong>注意</strong>（黄）: ノルム比 ≤ 2.0 — 音質が変化する可能性</li>
+                    <li><strong>危険</strong>（赤）: ノルム比 &gt; 2.0 — 音質が崩れる可能性が高い</li>
+                </ul>
+            </div>
+        </details>
+
         <!-- セクション1: モデル選択 -->
         <div class="card">
             <h2>モデル選択</h2>
@@ -76,6 +106,13 @@
             <div id="norm-display">
                 <span class="norm-indicator">ノルム比: -</span>
             </div>
+            <button type="button" class="btn-secondary" style="margin-top: 12px;"
+                    hx-post="/api/morphing/visualize"
+                    hx-include="#style-a-select, #style-b-select, [name='method']:checked, #ratio-slider"
+                    hx-target="#morphing-plot">
+                2D可視化
+            </button>
+            <div id="morphing-plot"></div>
         </div>
 
         <!-- セクション4: 音声合成 -->

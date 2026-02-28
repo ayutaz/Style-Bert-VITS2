@@ -521,3 +521,123 @@ input[type="range"]::-moz-range-track {
     align-items: flex-start;
   }
 }
+
+/* ---------- Style Plot (2D Visualization) ---------- */
+
+.style-plot-container {
+  margin-top: 16px;
+}
+
+.style-plot {
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 1;
+  background-color: #111827;
+  border-radius: 8px;
+  border: 1px solid #374151;
+}
+
+.plot-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot-style {
+  background-color: #86cecb;
+}
+
+.legend-dot-result {
+  background-color: #f59e0b;
+}
+
+/* ---------- Usage Guide ---------- */
+
+details.card {
+  cursor: default;
+}
+
+.guide-summary {
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #86cecb;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-summary::before {
+  content: "▶";
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+}
+
+details[open] .guide-summary::before {
+  transform: rotate(90deg);
+}
+
+.guide-summary::-webkit-details-marker {
+  display: none;
+}
+
+.guide-content {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.guide-content h3 {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  margin: 16px 0 8px 0;
+}
+
+.guide-content h3:first-child {
+  margin-top: 0;
+}
+
+.guide-content p,
+.guide-content li,
+.guide-content dd {
+  color: #9ca3af;
+}
+
+.guide-content ol,
+.guide-content ul {
+  padding-left: 20px;
+}
+
+.guide-content dt {
+  color: #e2e8f0;
+  margin-top: 12px;
+}
+
+.guide-content dd {
+  margin-left: 16px;
+  margin-bottom: 8px;
+}
+
+.guide-content code {
+  background-color: #374151;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #86cecb;
+}

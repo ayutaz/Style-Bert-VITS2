@@ -33,6 +33,8 @@ uv run python app.py --device cpu           # CPUモード
 ```bash
 uv run --only-group test pytest tests/test_style_ops.py -v  # style_ops 単体テスト (PyTorch不要)
 uv run --only-group test pytest tests/test_expression_parser.py -v  # 式パーサーテスト (PyTorch不要)
+uv run --only-group test pytest tests/test_edge_cases.py -v        # エッジケーステスト (PyTorch不要)
+uv run --only-group test pytest tests/test_integration.py -v       # 統合テスト (PyTorch不要)
 uv run pytest -s tests/test_main.py::test_synthesize_cpu     # 音声合成CPUテスト
 uv run pytest -s tests/test_main.py::test_synthesize_cuda    # 音声合成CUDAテスト
 ```
@@ -69,6 +71,7 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
   - 安全機構: `clip_norm()`, `compute_norm_ratio()`, `validate_style_vector()`
   - I/O: `load_style_vectors()`, `save_style_vectors()`
+  - 可視化: `pca_project_2d()`, `prepare_plot_data()`
 - **`expression_parser.py`** — カスタム式パーサー。スタイル名と四則演算の式を安全に解析（eval不使用）
 - **`constants.py`** — バージョン (`VERSION`)、デフォルトパラメータ、言語定義。hatchのバージョンソースでもある
 
