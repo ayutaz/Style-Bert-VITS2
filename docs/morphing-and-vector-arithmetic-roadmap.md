@@ -25,7 +25,7 @@ Phase 1: コアライブラリ層        ← 完了
 Phase 2: 推論パイプライン拡張    ← 完了
 Phase 3: モーフィングUI          ← 完了
 Phase 4: ベクトル演算UI          ← 完了
-Phase 5: 統合・品質保証          ← 全フェーズ完了後
+Phase 5: 統合・品質保証          ← 完了
 ```
 
 ```
@@ -175,6 +175,7 @@ FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを�
 | POST | /api/morphing/compute-norm | ノルム比計算 |
 | POST | /api/morphing/synthesize | 音声合成 |
 | POST | /api/morphing/save-style | スタイル保存 |
+| POST | /api/morphing/visualize | 2Dスタイルプロット (Phase 5) |
 
 ### 完了条件
 - [x] モーフィングUI実装 (HTMX + Jinja2)
@@ -182,7 +183,7 @@ FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを�
 - [x] 音声プレビュー再生
 - [x] ノルム安全インジケータ表示
 - [x] スタイル保存機能
-- [ ] 2Dプロット可視化 → Phase 5 に移動
+- [x] 2Dプロット可視化 → Phase 5 で実装済み (`/api/morphing/visualize`)
 
 ---
 
@@ -222,6 +223,7 @@ FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを�
 | POST | /api/vector/compute-norm | ノルム比計算 |
 | POST | /api/vector/synthesize | 音声合成 |
 | POST | /api/vector/save-style | スタイル保存 |
+| POST | /api/vector/visualize | 2Dスタイルプロット (Phase 5) |
 
 ### 演算モード
 
@@ -247,15 +249,19 @@ FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを�
 **目的**: 全フェーズの統合テストとドキュメント整備
 
 ### 5.1 app.py への統合
-```python
-# app.py に追加
-from gradio_tabs.style_operations import create_style_operation_app
 
-with gr.Blocks(theme=GRADIO_THEME) as app:
-    gr.Markdown(f"# Style-Bert-VITS2 WebUI (version {VERSION})")
-    create_inference_app(model_holder=model_holder)
-    create_style_operation_app(model_holder=model_holder)  # NEW
+HTMXベースのUIとして実装済み。`app.py` で FastAPI APIRouter をマウント:
+
+```python
+from morphing_app import router as morphing_router
+from vector_app import router as vector_router
+
+fastapi_app.include_router(morphing_router)
+fastapi_app.include_router(vector_router)
 ```
+
+- `/morphing` — モーフィングUI
+- `/vector-arithmetic` — ベクトル演算UI
 
 ### 5.2 テスト
 - [x] `tests/test_style_ops.py` — ユニットテスト回帰確認
@@ -265,7 +271,7 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 - [x] 統合テスト — モジュールインポート、API一貫性 (`tests/test_integration.py`)
 
 ### 5.3 コードスタイル
-- [x] `uv run black --check .` がパス (bert_models.py, tts_model.py を除く — black内部バグ)
+- [x] `uv run black --check .` がパス (全67ファイル、bert_models.py・tts_model.py の `# fmt: skip` 起因バグも修正済み)
 - [x] `uv run isort --check-only --profile black .` がパス
 - [x] docstring監査完了（日本語、Google style）
 
@@ -280,16 +286,16 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 
 | ファイル | 変更種別 | Phase | 状態 |
 |----------|----------|-------|------|
-| `style_bert_vits2/style_ops.py` | 変更 | 1, 5 | Phase 5 完了 |
+| `style_bert_vits2/style_ops.py` | 変更 | 1, 5 | **完了** |
 | `tests/test_style_ops.py` | **新規** | 1 | **完了** |
-| `style_bert_vits2/tts_model.py` | 変更 | 2 | **完了** |
-| `morphing_app.py` | **新規** | 3 | **完了** |
-| `templates/partials/*` | **新規** | 3 | **完了** |
-| `static/css/morphing.css` | 変更 | 3, 4 | Phase 4 完了 |
-| `app.py` | 変更 | 3, 4, 5 | Phase 4 完了 |
-| `pyproject.toml` | 変更 | 3 | Phase 3 完了 |
+| `style_bert_vits2/tts_model.py` | 変更 | 2, 5 | **完了** |
+| `morphing_app.py` | **新規** | 3, 5 | **完了** |
+| `templates/partials/*` | **新規** | 3, 4, 5 | **完了** |
+| `static/css/morphing.css` | 変更 | 3, 4, 5 | **完了** |
+| `app.py` | 変更 | 3, 4 | **完了** |
+| `pyproject.toml` | 変更 | 3, 5 | **完了** |
 | `tests/test_morphing_api.py` | **新規** | 3 | **完了** |
-| `templates/morphing.html` | 変更 | 3, 4 | Phase 4 完了 |
+| `templates/morphing.html` | 変更 | 3, 4, 5 | **完了** |
 | `vector_app.py` | **新規** | 4 | **完了** |
 | `style_bert_vits2/expression_parser.py` | **新規** | 4 | **完了** |
 | `templates/vector_arithmetic.html` | **新規** | 4 | **完了** |
@@ -300,6 +306,7 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 | `tests/test_integration.py` | **新規** | 5 | **完了** |
 | `docs/CHANGELOG.md` | **新規** | 5 | **完了** |
 | `templates/partials/style_plot.html` | **新規** | 5 | **完了** |
+| `style_bert_vits2/nlp/bert_models.py` | 変更 (black修正) | 5 | **完了** |
 
 ---
 

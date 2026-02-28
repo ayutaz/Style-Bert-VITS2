@@ -37,7 +37,8 @@
 
 #### Phase 5: 統合・品質保証
 - 2Dスタイルベクトル可視化 (PCA射影)
-- エッジケーステスト追加 (25件以上)
+- エッジケーステスト追加 (27件: `tests/test_edge_cases.py`)
+- 統合テスト追加 (8件: `tests/test_integration.py`)
 - 全コードベースの black / isort フォーマット統一
 - 各UIにインタラクティブ使い方ガイド追加
 
@@ -67,6 +68,7 @@
 | `tests/test_expression_parser.py` | 式パーサーテスト |
 | `tests/test_vector_app.py` | ベクトル演算テスト |
 | `tests/test_edge_cases.py` | エッジケーステスト |
+| `tests/test_integration.py` | 統合テスト |
 
 ## v2.7.0 (2025-08-24)
 

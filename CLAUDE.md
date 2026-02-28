@@ -66,12 +66,12 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - `japanese/`, `english/`, `chinese/`: 各言語のG2P、BERT特徴抽出、正規化
   - `japanese/pyopenjtalk_worker/`: GIL回避用のTCPソケットサーバーパターン
   - `japanese/user_dict/`: VOICEVOXベースのユーザー辞書 (LGPL v3)
-- **`style_ops.py`** — スタイルベクトル演算モジュール (Phase 1)。モーフィングUI (`morphing_app.py`) から呼び出される
+- **`style_ops.py`** — スタイルベクトル演算モジュール。モーフィングUI (`morphing_app.py`) とベクトル演算UI (`vector_app.py`) から呼び出される
   - 補間: `lerp()`, `slerp()` (LERPフォールバック付き球面線形補間)
   - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
   - 安全機構: `clip_norm()`, `compute_norm_ratio()`, `validate_style_vector()`
   - I/O: `load_style_vectors()`, `save_style_vectors()`
-  - 可視化: `pca_project_2d()`, `prepare_plot_data()`
+  - 可視化: `pca_project_2d()` (SVDベースPCA), `prepare_plot_data()` (座標正規化5-95範囲)
 - **`expression_parser.py`** — カスタム式パーサー。スタイル名と四則演算の式を安全に解析（eval不使用）
 - **`constants.py`** — バージョン (`VERSION`)、デフォルトパラメータ、言語定義。hatchのバージョンソースでもある
 
@@ -102,11 +102,16 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - `/vector-arithmetic`: メインページ（HTMXベース）
   - `/api/vector/*`: モデル選択、ベクトル演算（差分転写・加重平均・スケーリング・カスタム式）、音声合成、スタイル保存のAPIエンドポイント
 - **`templates/`** — Jinja2テンプレート
-  - `morphing.html`: メインページ
-  - `partials/`: HTMX部分更新用のフラグメントテンプレート
-- **`static/css/`** — スタイルシート
+  - `morphing.html`: モーフィングUIメインページ
+  - `vector_arithmetic.html`: ベクトル演算UIメインページ
+  - `partials/style_options.html`: モーフィング用スタイル選択フラグメント
+  - `partials/va_style_options.html`: ベクトル演算用モード別スタイル選択フラグメント
+  - `partials/audio_player.html`: 音声プレーヤーフラグメント
+  - `partials/norm_indicator.html`: ノルム安全インジケータ
+  - `partials/style_plot.html`: PCA 2Dスタイルプロット (SVG)
+- **`static/css/morphing.css`** — HTMX UI共通ダークテーマスタイルシート
 - **`app.py`** — FastAPI + Gradio mount パターンで統合
-  - 通常モード: FastAPIがメインアプリ、Gradioを`/`にマウント、HTMX UIを`/morphing`で提供
+  - 通常モード: FastAPIがメインアプリ、Gradioを`/`にマウント、HTMX UIを`/morphing`と`/vector-arithmetic`で提供
   - `--share`モード: Gradioのトンネル機能を使用（HTMX UIは利用不可）
 
 ### 設定ファイル
