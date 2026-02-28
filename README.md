@@ -6,7 +6,7 @@ Bert-VITS2 with more controllable voice styles.
 
 https://github.com/litagin02/Style-Bert-VITS2/assets/139731664/e853f9a2-db4a-4202-a1dd-56ded3c562a0
 
-You can install via `pip install style-bert-vits2` (inference only), see [library.ipynb](/library.ipynb) for example usage.
+You can install via `pip install style-bert-vits2` (inference only).
 
 - [**よくある質問** (FAQ)](/docs/FAQ.md)
 - [🤗 オンラインデモはこちらから](https://huggingface.co/spaces/litagin/Style-Bert-VITS2-Editor-Demo)
@@ -20,7 +20,7 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 
 - 入力されたテキストの内容をもとに感情豊かな音声を生成する[Bert-VITS2](https://github.com/fishaudio/Bert-VITS2)のv2.1とJapanese-Extraを元に、感情や発話スタイルを強弱込みで自由に制御できるようにしたものです。
 - 音声合成のみに使う場合は、グラボがなくてもCPUで動作します。
-- 音声合成のみに使う場合、Pythonライブラリとして`pip install style-bert-vits2`でインストールできます。例は[library.ipynb](/library.ipynb)を参照してください。
+- 音声合成のみに使う場合、Pythonライブラリとして`pip install style-bert-vits2`でインストールできます。
 - 他との連携に使えるAPIサーバーも同梱しています ([@darai0512](https://github.com/darai0512) 様によるPRです、ありがとうございます)。
 - 元々「楽しそうな文章は楽しそうに、悲しそうな文章は悲しそうに」読むのがBert-VITS2の強みですので、スタイル指定がデフォルトでも感情豊かな音声を生成することができます。
 
@@ -34,8 +34,6 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 Windows コマンドプロンプト・WSL2・Linux(Ubuntu Desktop)での動作を確認しています。NVidiaのGPUが無い場合でも音声合成は可能です。
 
 ### インストール
-
-Pythonライブラリとしてのpipでのインストールや使用例は[library.ipynb](/library.ipynb)を参照してください。
 
 Pythonの仮想環境・パッケージ管理ツールである[uv](https://github.com/astral-sh/uv)を使ってインストールします。
 
