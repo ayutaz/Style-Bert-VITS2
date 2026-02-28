@@ -377,6 +377,7 @@ class TTSModel:
         intonation_scale: float = 1.0,
         null_model_params: Optional[dict[int, NullModelParam]] = None,
         force_reload_model: bool = False,
+        style_vector_override: Optional[NDArray[Any]] = None,
     ) -> tuple[int, NDArray[Any]]:
         """
         テキストから音声を合成する。
@@ -403,6 +404,7 @@ class TTSModel:
             intonation_scale (float, optional): 抑揚の平均からの変化幅 (1.0 から変更すると若干音質が低下する). Defaults to 1.0.
             null_model_params (Optional[dict[int, NullModelParam]], optional): 推論時に使用するヌルモデルの情報。ONNX 推論では無視される。
             force_reload_model (bool, optional): モデルを強制的に再ロードするかどうか. Defaults to False.
+            style_vector_override (Optional[NDArray[Any]], optional): スタイルベクトルの直接指定 (256次元)。指定時は style / reference_audio_path / style_weight を無視する. Defaults to None.
         Returns:
             tuple[int, NDArray[Any]]: サンプリングレートと音声データ (16bit PCM)
         """
@@ -418,7 +420,9 @@ class TTSModel:
             assist_text = None
 
         # スタイルベクトルを取得
-        if reference_audio_path is None:
+        if style_vector_override is not None:
+            style_vector = style_vector_override
+        elif reference_audio_path is None:
             style_id = self.style2id[style]
             style_vector = self.get_style_vector(style_id, style_weight)
         else:

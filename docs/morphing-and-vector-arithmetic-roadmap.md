@@ -9,12 +9,12 @@
 | Phase | 内容 | 状態 | 進捗 |
 |-------|------|------|------|
 | **Phase 1** | コアライブラリ層 | **完了** | 100% |
-| **Phase 2** | 推論パイプライン拡張 | 未着手 | 0% |
+| **Phase 2** | 推論パイプライン拡張 | **完了** | 100% |
 | **Phase 3** | モーフィングUI | 未着手 | 0% |
 | **Phase 4** | ベクトル演算UI | 未着手 | 0% |
 | **Phase 5** | 統合・品質保証 | 未着手 | 0% |
 
-**現在のボトルネック**: Phase 2 が未実装のため Phase 3・4 に進めない。
+**次のステップ**: Phase 3 (モーフィングUI) または Phase 4 (ベクトル演算UI) に着手可能。
 
 ---
 
@@ -22,9 +22,9 @@
 
 ```
 Phase 1: コアライブラリ層        ← 完了
-Phase 2: 推論パイプライン拡張    ← Phase 1 に依存（次にやるべき）
-Phase 3: モーフィングUI          ← Phase 1, 2 に依存
-Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存
+Phase 2: 推論パイプライン拡張    ← 完了
+Phase 3: モーフィングUI          ← Phase 1, 2 に依存（着手可能）
+Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存（着手可能）
 Phase 5: 統合・品質保証          ← 全フェーズ完了後
 ```
 
@@ -33,7 +33,7 @@ Phase 5: 統合・品質保証          ← 全フェーズ完了後
                   │                              ──→ Phase 5 (統合・QA)
                   ├─→ Phase 4 (ベクトル演算UI)
                   │
- Phase 2 ────────┘
+ Phase 2 (完了) ─┘
 ```
 
 ---
@@ -89,7 +89,7 @@ Phase 5: 統合・品質保証          ← 全フェーズ完了後
 
 ---
 
-## Phase 2: 推論パイプライン拡張 — 未着手
+## Phase 2: 推論パイプライン拡張 — 完了
 
 **目的**: カスタムスタイルベクトルを推論パイプラインに注入可能にする
 
@@ -133,10 +133,10 @@ else:
 ```
 
 ### 完了条件
-- [ ] `infer()` にパラメータ追加
-- [ ] PyTorch推論パスでの動作確認
-- [ ] ONNX推論パスでの動作確認
-- [ ] 既存テスト (`tests/test_main.py`) が引き続きパスすること
+- [x] `infer()` に `style_vector_override` パラメータ追加
+- [x] PyTorch推論パスでの動作確認 (CPU / CUDA)
+- [x] 既存テスト (`tests/test_main.py::test_synthesize_cpu`) が引き続きパス
+- [x] 新規テスト追加 (4件): override基本動作、優先度確認、style_ops統合、CUDA
 
 ---
 
@@ -305,7 +305,7 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 |----------|----------|-------|------|
 | `style_bert_vits2/style_ops.py` | **新規** | 1 | **完了** |
 | `tests/test_style_ops.py` | **新規** | 1 | **完了** |
-| `style_bert_vits2/tts_model.py` | 変更 | 2 | 未着手 |
+| `style_bert_vits2/tts_model.py` | 変更 | 2 | **完了** |
 | `gradio_tabs/style_operations.py` | **新規** | 3, 4 | 未着手 |
 | `app.py` | 変更 | 5 | 未着手 |
 | `docs/CHANGELOG.md` | 変更 | 5 | 未着手 |

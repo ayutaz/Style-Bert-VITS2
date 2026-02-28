@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal
 
+import numpy as np
 import pytest
 from scipy.io import wavfile
 
@@ -140,3 +141,118 @@ def test_synthesize_onnx_coreml():
             ("CoreMLExecutionProvider", {}),
         ],
     )
+
+
+def _get_test_model(device: str = "cpu"):
+    """テスト用モデルを取得するヘルパー。モデルが見つからない場合はスキップ。"""
+    onnx_providers = [
+        ("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"}),
+    ]
+    model_holder = TTSModelHolder(BASE_DIR / "model_assets", device, onnx_providers)
+    if len(model_holder.models_info) == 0:
+        pytest.skip("音声合成モデルが見つかりませんでした。")
+
+    for model_info in model_holder.models_info:
+        if model_info.name in ("koharune-ami", "amitaro"):
+            model_files = [
+                f
+                for f in model_info.files
+                if f.endswith(".safetensors") and not f.startswith(".")
+            ]
+            if len(model_files) == 0:
+                continue
+            model = model_holder.get_model(model_info.name, model_files[0])
+            model.load()
+            return model, model_info
+
+    pytest.skip("テスト用モデル (koharune-ami/amitaro) が見つかりませんでした。")
+
+
+def test_style_vector_override_cpu():
+    """style_vector_override でカスタムベクトルを直接注入して推論できることを確認"""
+    model, model_info = _get_test_model("cpu")
+    try:
+        # モデルのスタイルベクトルから直接取得して override として渡す
+        style_id = model.style2id[model_info.styles[0]]
+        custom_vector = model.get_style_vector(style_id, weight=1.0)
+
+        sample_rate, audio_data = model.infer(
+            "スタイルベクトルオーバーライドのテストです。",
+            language=Languages.JP,
+            speaker_id=0,
+            style_vector_override=custom_vector,
+        )
+        assert sample_rate > 0
+        assert len(audio_data) > 0
+    finally:
+        model.unload()
+
+
+def test_style_vector_override_ignores_style_param():
+    """style_vector_override 指定時に style / style_weight が無視されることを確認"""
+    model, model_info = _get_test_model("cpu")
+    try:
+        # Neutral のベクトルを override として渡しつつ、style に別の値を指定
+        neutral_id = model.style2id.get("Neutral", 0)
+        neutral_vector = model.get_style_vector(neutral_id, weight=1.0)
+
+        sample_rate, audio_data = model.infer(
+            "オーバーライド優先度テスト。",
+            language=Languages.JP,
+            speaker_id=0,
+            style="Happy",  # override が優先されるため無視される
+            style_weight=10.0,  # override が優先されるため無視される
+            style_vector_override=neutral_vector,
+        )
+        assert sample_rate > 0
+        assert len(audio_data) > 0
+    finally:
+        model.unload()
+
+
+def test_style_vector_override_with_style_ops():
+    """Phase 1 の style_ops 関数で生成したベクトルを override に渡せることを確認"""
+    from style_bert_vits2.style_ops import slerp, validate_style_vector
+
+    model, model_info = _get_test_model("cpu")
+    try:
+        styles = list(model.style2id.keys())
+        vec_a = model.get_style_vector(model.style2id[styles[0]], weight=1.0)
+        if len(styles) >= 2:
+            vec_b = model.get_style_vector(model.style2id[styles[1]], weight=1.0)
+        else:
+            vec_b = vec_a * 1.1  # スタイルが1つだけの場合
+
+        # SLERP で補間
+        interpolated = slerp(0.5, vec_a, vec_b)
+        validate_style_vector(interpolated)
+
+        sample_rate, audio_data = model.infer(
+            "スタイル補間のテストです。",
+            language=Languages.JP,
+            speaker_id=0,
+            style_vector_override=interpolated,
+        )
+        assert sample_rate > 0
+        assert len(audio_data) > 0
+    finally:
+        model.unload()
+
+
+def test_style_vector_override_cuda():
+    """CUDA での style_vector_override 推論テスト"""
+    model, model_info = _get_test_model("cuda")
+    try:
+        style_id = model.style2id[model_info.styles[0]]
+        custom_vector = model.get_style_vector(style_id, weight=1.0)
+
+        sample_rate, audio_data = model.infer(
+            "CUDAオーバーライドテスト。",
+            language=Languages.JP,
+            speaker_id=0,
+            style_vector_override=custom_vector,
+        )
+        assert sample_rate > 0
+        assert len(audio_data) > 0
+    finally:
+        model.unload()
