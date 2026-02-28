@@ -18,27 +18,9 @@ dist/
 
 /configs/paths.yml
 
-/pretrained/*.safetensors
-/pretrained/*.pth
-
-/pretrained_jp_extra/*.safetensors
-/pretrained_jp_extra/*.pth
-
-/slm/*/*.bin
-
-/scripts/test/
-/scripts/lib/
-/scripts/Style-Bert-VITS2/
-/scripts/sbv2/
 *.zip
-*.csv
-*.bak
-/mos_results/
-
-safetensors.ipynb
 *.wav
 # pyopenjtalk's dictionary
 *.dic
 
-playground.ipynb
-playgrounds/
+/test_output/

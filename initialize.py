@@ -20,36 +20,6 @@ def download_bert_models():
                 hf_hub_download(v["repo_id"], file, local_dir=local_path)
 
 
-def download_slm_model():
-    local_path = Path("slm/wavlm-base-plus/")
-    file = "pytorch_model.bin"
-    if not Path(local_path).joinpath(file).exists():
-        logger.info(f"Downloading wavlm-base-plus {file}")
-        hf_hub_download("microsoft/wavlm-base-plus", file, local_dir=local_path)
-
-
-def download_pretrained_models():
-    files = ["G_0.safetensors", "D_0.safetensors", "DUR_0.safetensors"]
-    local_path = Path("pretrained")
-    for file in files:
-        if not Path(local_path).joinpath(file).exists():
-            logger.info(f"Downloading pretrained {file}")
-            hf_hub_download(
-                "litagin/Style-Bert-VITS2-1.0-base", file, local_dir=local_path
-            )
-
-
-def download_jp_extra_pretrained_models():
-    files = ["G_0.safetensors", "D_0.safetensors", "WD_0.safetensors"]
-    local_path = Path("pretrained_jp_extra")
-    for file in files:
-        if not Path(local_path).joinpath(file).exists():
-            logger.info(f"Downloading JP-Extra pretrained {file}")
-            hf_hub_download(
-                "litagin/Style-Bert-VITS2-2.0-base-JP-Extra", file, local_dir=local_path
-            )
-
-
 def download_default_models():
     files = [
         "jvnv-F1-jp/config.json",
@@ -99,13 +69,6 @@ def download_default_models():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip_default_models", action="store_true")
-    parser.add_argument("--only_infer", action="store_true")
-    parser.add_argument(
-        "--dataset_root",
-        type=str,
-        help="Dataset root path (default: Data)",
-        default=None,
-    )
     parser.add_argument(
         "--assets_root",
         type=str,
@@ -118,10 +81,6 @@ def main():
 
     if not args.skip_default_models:
         download_default_models()
-    if not args.only_infer:
-        download_slm_model()
-        download_pretrained_models()
-        download_jp_extra_pretrained_models()
 
     # If configs/paths.yml not exists, create it
     default_paths_yml = Path("configs/default_paths.yml")
@@ -129,16 +88,13 @@ def main():
     if not paths_yml.exists():
         shutil.copy(default_paths_yml, paths_yml)
 
-    if args.dataset_root is None and args.assets_root is None:
+    if args.assets_root is None:
         return
 
     # Change default paths if necessary
     with open(paths_yml, encoding="utf-8") as f:
         yml_data = yaml.safe_load(f)
-    if args.assets_root is not None:
-        yml_data["assets_root"] = args.assets_root
-    if args.dataset_root is not None:
-        yml_data["dataset_root"] = args.dataset_root
+    yml_data["assets_root"] = args.assets_root
     with open(paths_yml, "w", encoding="utf-8") as f:
         yaml.dump(yml_data, f, allow_unicode=True)
 

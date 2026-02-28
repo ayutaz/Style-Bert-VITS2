@@ -54,9 +54,7 @@ path = "style_bert_vits2/constants.py"
 
 [tool.hatch.build.targets.sdist]
 only-include = [
-    ".vscode",
     "dict_data/default.csv",
-    "docs",
     "style_bert_vits2",
     "tests",
     "LGPL_LICENSE",

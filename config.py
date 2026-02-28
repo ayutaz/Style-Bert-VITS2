@@ -9,8 +9,7 @@ from style_bert_vits2.logging import logger
 
 
 class PathConfig:
-    def __init__(self, dataset_root: str, assets_root: str):
-        self.dataset_root = Path(dataset_root)
+    def __init__(self, assets_root: str, **_kwargs):
         self.assets_root = Path(assets_root)
 
 
