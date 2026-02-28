@@ -345,3 +345,179 @@ input[type="range"]::-moz-range-track {
     padding: 16px;
   }
 }
+
+/* ========== Vector Arithmetic UI (Phase 4) ========== */
+
+/* ---------- Mode Tabs ---------- */
+
+.mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #374151;
+  padding-bottom: 0;
+}
+
+.mode-tab {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.mode-tab:hover {
+  color: #e2e8f0;
+}
+
+.mode-tab.active {
+  color: #86cecb;
+  border-bottom-color: #86cecb;
+}
+
+/* ---------- Mode Panels ---------- */
+
+.mode-panel {
+  display: none;
+}
+
+.mode-panel.active {
+  display: block;
+}
+
+.mode-description {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(134, 206, 203, 0.05);
+  border-left: 3px solid #86cecb;
+  border-radius: 0 4px 4px 0;
+}
+
+/* ---------- Weight Row ---------- */
+
+.weight-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.weight-row select {
+  min-width: 120px;
+}
+
+.weight-row .weight-value {
+  font-size: 0.9rem;
+  color: #86cecb;
+  min-width: 50px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Clip Settings ---------- */
+
+.clip-settings {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.clip-settings label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.clip-settings input[type="checkbox"] {
+  accent-color: #86cecb;
+  width: 18px;
+  height: 18px;
+}
+
+.clip-factor-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.clip-factor-group input[type="range"] {
+  flex: 1;
+}
+
+.clip-factor-group .factor-value {
+  font-size: 0.9rem;
+  color: #86cecb;
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Formula Help ---------- */
+
+.formula-help {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #111827;
+  border-radius: 6px;
+}
+
+/* ---------- Styles List (Custom mode) ---------- */
+
+.styles-list {
+  margin-top: 12px;
+}
+
+.styles-list label {
+  margin-bottom: 8px;
+}
+
+.style-tag {
+  display: inline-block;
+  background-color: #374151;
+  color: #86cecb;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin: 2px 4px 2px 0;
+  border: 1px solid #4b5563;
+}
+
+/* ---------- Responsive (Vector Arithmetic) ---------- */
+
+@media (max-width: 600px) {
+  .mode-tabs {
+    flex-wrap: wrap;
+  }
+
+  .mode-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .weight-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .clip-settings {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

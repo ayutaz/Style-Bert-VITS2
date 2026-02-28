@@ -1,0 +1,158 @@
+<!-- モードタブ -->
+<div class="mode-tabs">
+    <button type="button" class="mode-tab active" data-mode="diff_transfer" onclick="switchVaMode('diff_transfer')">差分転写</button>
+    <button type="button" class="mode-tab" data-mode="weighted_mean" onclick="switchVaMode('weighted_mean')">加重平均</button>
+    <button type="button" class="mode-tab" data-mode="scaling" onclick="switchVaMode('scaling')">スケーリング</button>
+    <button type="button" class="mode-tab" data-mode="custom" onclick="switchVaMode('custom')">カスタム式</button>
+</div>
+<input type="hidden" name="mode" id="va-mode" value="diff_transfer" data-va-param>
+
+<!-- 差分転写パネル -->
+<div class="mode-panel active" data-mode="diff_transfer">
+    <p class="mode-description">A + scale &times; (B &minus; C) : ベースAにターゲットBとソースCの差分を適用</p>
+    <div class="form-group">
+        <label for="va-dt-base">ベース (A)</label>
+        <select name="dt_base" id="va-dt-base" data-va-param>
+            {% for s in styles %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="va-dt-source">ソース (C)</label>
+        <select name="dt_source" id="va-dt-source" data-va-param>
+            {% for s in styles %}
+            <option value="{{ s }}" {% if styles | length >= 2 and loop.index == 2 %}selected{% elif styles | length < 2 and loop.last %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="va-dt-target">ターゲット (B)</label>
+        <select name="dt_target" id="va-dt-target" data-va-param>
+            {% for s in styles %}
+            <option value="{{ s }}" {% if styles | length >= 3 and loop.index == 3 %}selected{% elif styles | length < 3 and loop.last %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="slider-group">
+        <label>スケール: <span id="va-dt-scale-display">1.00</span></label>
+        <input type="range" name="dt_scale" id="va-dt-scale" data-va-param
+               min="0" max="3" step="0.01" value="1.0"
+               oninput="document.getElementById('va-dt-scale-display').textContent = parseFloat(this.value).toFixed(2)">
+        <div class="slider-labels">
+            <span>0.0</span>
+            <span>3.0</span>
+        </div>
+    </div>
+</div>
+
+<!-- 加重平均パネル -->
+<div class="mode-panel" data-mode="weighted_mean" style="display:none">
+    <p class="mode-description">w&#x2081;&times;A + w&#x2082;&times;B + w&#x2083;&times;C : スタイルの重み付き平均</p>
+    <div class="weight-row">
+        <div class="form-group">
+            <label for="va-wm-style-a">スタイル A</label>
+            <select name="wm_style_a" id="va-wm-style-a" data-va-param>
+                {% for s in styles %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="slider-group">
+            <label>重み: <span id="va-wm-weight-a-display">1.00</span></label>
+            <input type="range" name="wm_weight_a" id="va-wm-weight-a" data-va-param
+                   min="-2" max="2" step="0.01" value="1.0"
+                   oninput="document.getElementById('va-wm-weight-a-display').textContent = parseFloat(this.value).toFixed(2)">
+        </div>
+    </div>
+    <div class="weight-row">
+        <div class="form-group">
+            <label for="va-wm-style-b">スタイル B</label>
+            <select name="wm_style_b" id="va-wm-style-b" data-va-param>
+                {% for s in styles %}
+                <option value="{{ s }}" {% if styles | length >= 2 and loop.index == 2 %}selected{% elif styles | length < 2 and loop.last %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="slider-group">
+            <label>重み: <span id="va-wm-weight-b-display">1.00</span></label>
+            <input type="range" name="wm_weight_b" id="va-wm-weight-b" data-va-param
+                   min="-2" max="2" step="0.01" value="1.0"
+                   oninput="document.getElementById('va-wm-weight-b-display').textContent = parseFloat(this.value).toFixed(2)">
+        </div>
+    </div>
+    <div class="weight-row">
+        <div class="form-group">
+            <label for="va-wm-style-c">スタイル C（オプション）</label>
+            <select name="wm_style_c" id="va-wm-style-c" data-va-param>
+                <option value="">(なし)</option>
+                {% for s in styles %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="slider-group">
+            <label>重み: <span id="va-wm-weight-c-display">0.00</span></label>
+            <input type="range" name="wm_weight_c" id="va-wm-weight-c" data-va-param
+                   min="-2" max="2" step="0.01" value="0.0"
+                   oninput="document.getElementById('va-wm-weight-c-display').textContent = parseFloat(this.value).toFixed(2)">
+        </div>
+    </div>
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="wm_normalize" id="va-wm-normalize" data-va-param checked>
+            重みを正規化（合計=1.0）
+        </label>
+    </div>
+</div>
+
+<!-- スケーリングパネル -->
+<div class="mode-panel" data-mode="scaling" style="display:none">
+    <p class="mode-description">scale &times; A : スタイルの強調・抑制</p>
+    <div class="form-group">
+        <label for="va-sc-style">スタイル</label>
+        <select name="sc_style" id="va-sc-style" data-va-param>
+            {% for s in styles %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="slider-group">
+        <label>スケール: <span id="va-sc-scale-display">1.00</span></label>
+        <input type="range" name="sc_scale" id="va-sc-scale" data-va-param
+               min="0" max="3" step="0.01" value="1.0"
+               oninput="document.getElementById('va-sc-scale-display').textContent = parseFloat(this.value).toFixed(2)">
+        <div class="slider-labels">
+            <span>0.0</span>
+            <span>3.0</span>
+        </div>
+    </div>
+</div>
+
+<!-- カスタム式パネル -->
+<div class="mode-panel" data-mode="custom" style="display:none">
+    <p class="mode-description">スタイル名と四則演算で自由に式を記述</p>
+    <textarea name="expression" id="va-custom-expression" data-va-param
+              rows="2" placeholder="例: Happy - 0.3 * Neutral + 0.5 * Sad"></textarea>
+    <div class="formula-help">
+        <p>演算子: <code>+</code> 加算, <code>-</code> 減算, <code>数値 * スタイル名</code> スカラー倍</p>
+    </div>
+    <div class="styles-list">
+        <span>利用可能なスタイル:</span>
+        {% for s in styles %}<span class="style-tag">{{ s }}</span>{% endfor %}
+    </div>
+</div>
+
+<script>
+function switchVaMode(mode) {
+    document.getElementById('va-mode').value = mode;
+    document.querySelectorAll('.mode-tab').forEach(function(tab) {
+        tab.classList.toggle('active', tab.dataset.mode === mode);
+    });
+    document.querySelectorAll('.mode-panel').forEach(function(panel) {
+        var show = panel.dataset.mode === mode;
+        panel.style.display = show ? 'block' : 'none';
+        panel.classList.toggle('active', show);
+    });
+}
+</script>

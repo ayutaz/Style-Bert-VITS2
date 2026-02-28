@@ -17,6 +17,7 @@ from style_bert_vits2.nlp.japanese import pyopenjtalk_worker
 from style_bert_vits2.nlp.japanese.user_dict import update_dict
 from style_bert_vits2.tts_model import TTSModelHolder
 from style_bert_vits2.utils import torch_device_to_onnx_providers
+from vector_app import router as vector_router
 
 # このプロセスからはワーカーを起動して辞書を使いたいので、ここで初期化
 pyopenjtalk_worker.initialize_worker()
@@ -49,7 +50,9 @@ model_holder = TTSModelHolder(
 with gr.Blocks(theme=GRADIO_THEME) as gradio_app:
     gr.Markdown(f"# Style-Bert-VITS2 WebUI (version {VERSION})")
     with gr.Row():
-        gr.Markdown("[モーフィング UI を開く](/morphing)")
+        gr.Markdown(
+            "[モーフィング UI を開く](/morphing) | [ベクトル演算 UI を開く](/vector-arithmetic)"
+        )
     create_inference_app(model_holder=model_holder)
 
 if args.share:
@@ -70,6 +73,7 @@ else:
     )
     fastapi_app.state.model_holder = model_holder
     fastapi_app.include_router(morphing_router)
+    fastapi_app.include_router(vector_router)
     fastapi_app = gr.mount_gradio_app(fastapi_app, gradio_app, path="/")
 
     if not args.no_autolaunch:

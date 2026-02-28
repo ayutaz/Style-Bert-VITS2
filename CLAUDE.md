@@ -11,6 +11,7 @@ Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対
 - JP-Extraモデル: 日本語特化の高品質モデルバリアント（JP以外の言語は使用不可）
 - **このブランチは推論専用**: 学習・前処理・データセット作成機能は削除済み
 - HTMXベースのモーフィングUI (`/morphing`) でスタイル間の補間操作が可能
+- HTMXベースのベクトル演算UI (`/vector-arithmetic`) でスタイルベクトルの算術操作が可能
 
 ## よく使うコマンド
 
@@ -31,6 +32,7 @@ uv run python app.py --device cpu           # CPUモード
 ### テスト
 ```bash
 uv run --only-group test pytest tests/test_style_ops.py -v  # style_ops 単体テスト (PyTorch不要)
+uv run --only-group test pytest tests/test_expression_parser.py -v  # 式パーサーテスト (PyTorch不要)
 uv run pytest -s tests/test_main.py::test_synthesize_cpu     # 音声合成CPUテスト
 uv run pytest -s tests/test_main.py::test_synthesize_cuda    # 音声合成CUDAテスト
 ```
@@ -67,6 +69,7 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
   - 安全機構: `clip_norm()`, `compute_norm_ratio()`, `validate_style_vector()`
   - I/O: `load_style_vectors()`, `save_style_vectors()`
+- **`expression_parser.py`** — カスタム式パーサー。スタイル名と四則演算の式を安全に解析（eval不使用）
 - **`constants.py`** — バージョン (`VERSION`)、デフォルトパラメータ、言語定義。hatchのバージョンソースでもある
 
 ### 推論データフロー
@@ -87,11 +90,14 @@ uv run black . && uv run isort --profile black .          # 自動修正
 `app.py` がGradioアプリのエントリポイント。
 - `inference.py`: 音声合成
 
-### HTMX モーフィングUI
+### HTMX UI
 
 - **`morphing_app.py`** — FastAPI APIRouterで実装されたモーフィングUIバックエンド
   - `/morphing`: メインページ（HTMXベース）
   - `/api/morphing/*`: モデル選択、スタイル補間、音声合成、スタイル保存のAPIエンドポイント
+- **`vector_app.py`** — FastAPI APIRouterで実装されたベクトル演算UIバックエンド
+  - `/vector-arithmetic`: メインページ（HTMXベース）
+  - `/api/vector/*`: モデル選択、ベクトル演算（差分転写・加重平均・スケーリング・カスタム式）、音声合成、スタイル保存のAPIエンドポイント
 - **`templates/`** — Jinja2テンプレート
   - `morphing.html`: メインページ
   - `partials/`: HTMX部分更新用のフラグメントテンプレート

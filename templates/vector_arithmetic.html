@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ベクトル演算 - Style-Bert-VITS2</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+    <link rel="stylesheet" href="/static/css/morphing.css">
+</head>
+<body>
+    <nav class="nav-bar">
+        <a href="/">&larr; 音声合成UIに戻る</a>
+        <a href="/morphing">モーフィング</a>
+        <h1>ベクトル演算</h1>
+    </nav>
+
+    <div class="morphing-container">
+        <!-- セクション1: モデル選択 -->
+        <div class="card">
+            <h2>モデル選択</h2>
+            <select name="model_name" id="va-model-name-select"
+                    hx-get="/api/vector/model-files"
+                    hx-trigger="change"
+                    hx-target="#va-model-files-select"
+                    hx-include="this">
+                {% for name in model_names %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <select name="model_path" id="va-model-files-select">
+                <option value="">モデルを選択してください</option>
+            </select>
+            <button class="btn-primary"
+                    hx-post="/api/vector/load-model"
+                    hx-include="#va-model-name-select, #va-model-files-select"
+                    hx-target="#va-style-selectors">
+                ロード
+            </button>
+        </div>
+
+        <!-- セクション2: 演算設定 -->
+        <div class="card">
+            <h2>演算設定</h2>
+            <div id="va-style-selectors">
+                <p class="placeholder">モデルをロードしてください</p>
+            </div>
+        </div>
+
+        <!-- セクション3: ノルム安全設定 -->
+        <div class="card">
+            <h2>ノルム安全設定</h2>
+            <div class="clip-settings">
+                <label>
+                    <input type="checkbox" id="va-clip-enabled" name="clip_enabled" checked>
+                    ノルムクリッピング有効（推奨）
+                </label>
+                <div class="slider-group">
+                    <label>クリッピング係数: <span id="va-clip-factor-display">2.00</span></label>
+                    <input type="range" id="va-clip-factor" name="clip_factor"
+                           min="1.0" max="5.0" step="0.1" value="2.0"
+                           oninput="document.getElementById('va-clip-factor-display').textContent = parseFloat(this.value).toFixed(2)">
+                </div>
+            </div>
+            <div id="va-norm-display">
+                <span class="norm-indicator">ノルム比: -</span>
+            </div>
+        </div>
+
+        <!-- セクション4: 音声合成 -->
+        <div class="card">
+            <h2>音声合成</h2>
+            <textarea id="va-text-input" name="text" rows="3">こんにちは、今日はいい天気ですね。</textarea>
+            <div class="form-row">
+                <select id="va-language-select" name="language">
+                    <option value="JP" selected>JP</option>
+                    <option value="EN">EN</option>
+                    <option value="ZH">ZH</option>
+                </select>
+                <input type="number" id="va-speaker-id" name="speaker_id" value="0" min="0">
+            </div>
+            <button class="btn-primary"
+                    hx-post="/api/vector/synthesize"
+                    hx-include="#va-model-name-select, #va-model-files-select, #va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor, #va-text-input, #va-language-select, #va-speaker-id"
+                    hx-target="#va-audio-output"
+                    hx-indicator="#va-synth-loading">
+                合成
+            </button>
+            <span id="va-synth-loading" class="htmx-indicator">処理中...</span>
+            <div id="va-audio-output"></div>
+        </div>
+
+        <!-- セクション5: スタイル保存 -->
+        <div class="card">
+            <h2>スタイル保存</h2>
+            <input type="text" id="va-new-style-name" name="style_name" placeholder="例: Diff_HappySad">
+            <button class="btn-secondary"
+                    hx-post="/api/vector/save-style"
+                    hx-include="#va-model-name-select, #va-model-files-select, #va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor, #va-text-input, #va-language-select, #va-speaker-id, #va-new-style-name"
+                    hx-target="#va-save-result">
+                保存
+            </button>
+            <div id="va-save-result"></div>
+        </div>
+    </div>
+</body>
+</html>

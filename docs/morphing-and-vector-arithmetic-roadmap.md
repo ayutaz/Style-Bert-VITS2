@@ -11,10 +11,10 @@
 | **Phase 1** | コアライブラリ層 | **完了** | 100% |
 | **Phase 2** | 推論パイプライン拡張 | **完了** | 100% |
 | **Phase 3** | モーフィングUI | **完了** | 100% |
-| **Phase 4** | ベクトル演算UI | 未着手 | 0% |
+| **Phase 4** | ベクトル演算UI | **完了** | 100% |
 | **Phase 5** | 統合・品質保証 | 未着手 | 0% |
 
-**次のステップ**: Phase 4 (ベクトル演算UI) に着手可能。
+**次のステップ**: Phase 5 (統合・品質保証) に着手可能。
 
 ---
 
@@ -24,14 +24,14 @@
 Phase 1: コアライブラリ層        ← 完了
 Phase 2: 推論パイプライン拡張    ← 完了
 Phase 3: モーフィングUI          ← 完了
-Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存（着手可能）
+Phase 4: ベクトル演算UI          ← 完了
 Phase 5: 統合・品質保証          ← 全フェーズ完了後
 ```
 
 ```
  Phase 1 (完了) ─┬─→ Phase 3 (完了)
                   │                    ──→ Phase 5 (統合・QA)
-                  ├─→ Phase 4 (ベクトル演算UI)
+                  ├─→ Phase 4 (完了)
                   │
  Phase 2 (完了) ─┘
 ```
@@ -186,70 +186,59 @@ FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを�
 
 ---
 
-## Phase 4: ベクトル演算UI (Gradio タブ) — 未着手
+## Phase 4: ベクトル演算UI (HTMX) — 完了
 
 **目的**: スタイルベクトルの算術操作をGUIで行えるようにする
 
-#### 4.1 ベクトル演算サブタブのUI構成
+**設計変更**: 当初はGradioタブとして計画していたが、Phase 3と同様にHTMXベースのスタンドアロンUIとして実装。
+FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを採用。
 
-```
-┌─────────────────────────────────────────────────────┐
-│ スタイル操作 > ベクトル演算                           │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  モデル選択: [Dropdown: model_name]                  │
-│  モデルファイル: [Dropdown: model_path]               │
-│                                                     │
-│  演算モード:                                         │
-│    ○ 差分転写  A + scale × (B - C)                   │
-│    ○ 加重平均  w1×A + w2×B + w3×C                    │
-│    ○ スケーリング  scale × A                          │
-│    ○ カスタム式                                      │
-│                                                     │
-│  ── 差分転写モード ──                                │
-│  ベース (A):    [Dropdown]                           │
-│  ソース (C):    [Dropdown]   → 差分の「元」           │
-│  ターゲット (B): [Dropdown]  → 差分の「先」           │
-│  スケール:      [====●=====] 1.0                     │
-│                                                     │
-│  □ ノルムクリッピング有効 (推奨)                      │
-│  クリッピング倍率: [====●=====] 2.0                   │
-│                                                     │
-│  ノルム状態: ▲ 注意 (比率: 1.85)                     │
-│                                                     │
-│  テキスト: [こんにちは、今日はいい天気ですね。]        │
-│                                                     │
-│  [音声プレビュー]  [スタイルとして保存]               │
-│                                                     │
-│  結果: [▶ Audio Player]                              │
-│                                                     │
-│  ┌─ ベクトル可視化 ─────────────────────────────┐   │
-│  │  [2D Plot: 全スタイル + 演算結果を表示]        │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
+### 新規ファイル
 
-#### 4.2 演算モード詳細
+| ファイル | 説明 |
+|----------|------|
+| `vector_app.py` | FastAPI APIRouter — ベクトル演算UIのバックエンド |
+| `style_bert_vits2/expression_parser.py` | カスタム式パーサー (eval不使用) |
+| `templates/vector_arithmetic.html` | メインページテンプレート |
+| `templates/partials/va_style_options.html` | モード別スタイル選択フラグメント |
+| `tests/test_expression_parser.py` | 式パーサーユニットテスト |
+| `tests/test_vector_app.py` | ベクトル演算APIテスト |
 
-| モード | 数式 | ユースケース |
-|--------|------|-------------|
-| 差分転写 | `A + scale × (B - C)` | 「男性声Aに女性声Bの特徴を付与」 |
-| 加重平均 | `w1×A + w2×B + w3×C` | 「3人の声の中間的な声」 |
-| スケーリング | `scale × A` | 「スタイルの強調/抑制」 |
-| カスタム式 | ユーザー定義 | 上級者向け自由演算 |
+### 変更ファイル
 
-#### 4.3 カスタム式モード（上級者向け）
-- テキストボックスで式を入力: `Happy - 0.3 * Neutral + 0.5 * Sad`
-- スタイル名を変数として認識し、対応するベクトルで演算
-- 安全なパーサー（evalは使わない）で処理
+| ファイル | 変更内容 |
+|----------|----------|
+| `app.py` | vector_router 統合 + ナビゲーションリンク追加 |
+| `templates/morphing.html` | ベクトル演算ページへのリンク追加 |
+| `static/css/morphing.css` | ベクトル演算UI用のCSS追加 |
+
+### APIエンドポイント
+
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | /vector-arithmetic | メインページ |
+| GET | /api/vector/model-files | モデルファイル一覧 |
+| POST | /api/vector/load-model | モデルロード + スタイル取得 |
+| POST | /api/vector/compute-norm | ノルム比計算 |
+| POST | /api/vector/synthesize | 音声合成 |
+| POST | /api/vector/save-style | スタイル保存 |
+
+### 演算モード
+
+| モード | 数式 | 説明 |
+|--------|------|------|
+| 差分転写 | A + scale × (B − C) | ベースにターゲット-ソース差分を適用 |
+| 加重平均 | w₁×A + w₂×B + w₃×C | 重み付き平均（正規化オプション付き） |
+| スケーリング | scale × A | スタイルの強調・抑制 |
+| カスタム式 | ユーザー定義 | 四則演算 + スタイル名の自由式 |
 
 ### 完了条件
-- [ ] 4つの演算モードUI実装
-- [ ] 各モードの演算ロジック
-- [ ] ノルムクリッピングのトグルと倍率設定
-- [ ] 音声プレビュー
-- [ ] スタイル保存機能
-- [ ] カスタム式パーサー（基本的な四則演算 + スタイル名参照）
+- [x] 4つの演算モードUI実装
+- [x] 各モードの演算ロジック
+- [x] ノルムクリッピングのトグルと倍率設定
+- [x] 音声プレビュー
+- [x] スタイル保存機能
+- [x] カスタム式パーサー（基本的な四則演算 + スタイル名参照）
 
 ---
 
@@ -294,13 +283,18 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 | `tests/test_style_ops.py` | **新規** | 1 | **完了** |
 | `style_bert_vits2/tts_model.py` | 変更 | 2 | **完了** |
 | `morphing_app.py` | **新規** | 3 | **完了** |
-| `templates/morphing.html` | **新規** | 3 | **完了** |
 | `templates/partials/*` | **新規** | 3 | **完了** |
-| `static/css/morphing.css` | **新規** | 3 | **完了** |
-| `app.py` | 変更 | 3, 5 | Phase 3 完了 |
+| `static/css/morphing.css` | 変更 | 3, 4 | Phase 4 完了 |
+| `app.py` | 変更 | 3, 4, 5 | Phase 4 完了 |
 | `pyproject.toml` | 変更 | 3 | Phase 3 完了 |
 | `tests/test_morphing_api.py` | **新規** | 3 | **完了** |
-| `gradio_tabs/style_operations.py` | **新規** | 4 | 未着手 |
+| `templates/morphing.html` | 変更 | 3, 4 | Phase 4 完了 |
+| `vector_app.py` | **新規** | 4 | **完了** |
+| `style_bert_vits2/expression_parser.py` | **新規** | 4 | **完了** |
+| `templates/vector_arithmetic.html` | **新規** | 4 | **完了** |
+| `templates/partials/va_style_options.html` | **新規** | 4 | **完了** |
+| `tests/test_expression_parser.py` | **新規** | 4 | **完了** |
+| `tests/test_vector_app.py` | **新規** | 4 | **完了** |
 | `docs/CHANGELOG.md` | 変更 | 5 | 未着手 |
 
 ---
