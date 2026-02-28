@@ -10,6 +10,7 @@ Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対
 - 対応言語: JP (日本語), EN (英語), ZH (中国語)
 - JP-Extraモデル: 日本語特化の高品質モデルバリアント（JP以外の言語は使用不可）
 - **このブランチは推論専用**: 学習・前処理・データセット作成機能は削除済み
+- HTMXベースのモーフィングUI (`/morphing`) でスタイル間の補間操作が可能
 
 ## よく使うコマンド
 
@@ -22,9 +23,10 @@ python initialize.py                  # BERTモデル・デフォルトTTSモデ
 
 ### 起動
 ```bash
-uv run python app.py                        # WebUI (Gradio、音声合成)
+uv run python app.py                        # WebUI (Gradio + HTMX)
 uv run python app.py --device cpu           # CPUモード
 ```
+注: `--share` オプション使用時はHTMX UIは利用不可（Gradioトンネルモード）
 
 ### テスト
 ```bash
@@ -49,6 +51,7 @@ uv run black . && uv run isort --profile black .          # 自動修正
 - **`tts_model.py`** — 推論のメインエントリポイント
   - `TTSModel`: 単一モデルの読み込み・推論・アンロード。safetensorsとONNXの両方に対応
   - `TTSModelHolder`: 複数モデルの管理。`model_assets/` 配下のモデルを自動検出
+  - `style_vector_override`: 推論時にスタイルベクトルを外部から直接指定するパラメータ（モーフィングUIで使用）
 - **`models/`** — ニューラルネットワーク本体
   - `models.py`: 標準VITS2アーキテクチャ (`SynthesizerTrn`)
   - `models_jp_extra.py`: JP-Extra版
@@ -59,7 +62,7 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - `japanese/`, `english/`, `chinese/`: 各言語のG2P、BERT特徴抽出、正規化
   - `japanese/pyopenjtalk_worker/`: GIL回避用のTCPソケットサーバーパターン
   - `japanese/user_dict/`: VOICEVOXベースのユーザー辞書 (LGPL v3)
-- **`style_ops.py`** — スタイルベクトル演算モジュール (Phase 1)
+- **`style_ops.py`** — スタイルベクトル演算モジュール (Phase 1)。モーフィングUI (`morphing_app.py`) から呼び出される
   - 補間: `lerp()`, `slerp()` (LERPフォールバック付き球面線形補間)
   - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
   - 安全機構: `clip_norm()`, `compute_norm_ratio()`, `validate_style_vector()`
@@ -83,6 +86,19 @@ uv run black . && uv run isort --profile black .          # 自動修正
 
 `app.py` がGradioアプリのエントリポイント。
 - `inference.py`: 音声合成
+
+### HTMX モーフィングUI
+
+- **`morphing_app.py`** — FastAPI APIRouterで実装されたモーフィングUIバックエンド
+  - `/morphing`: メインページ（HTMXベース）
+  - `/api/morphing/*`: モデル選択、スタイル補間、音声合成、スタイル保存のAPIエンドポイント
+- **`templates/`** — Jinja2テンプレート
+  - `morphing.html`: メインページ
+  - `partials/`: HTMX部分更新用のフラグメントテンプレート
+- **`static/css/`** — スタイルシート
+- **`app.py`** — FastAPI + Gradio mount パターンで統合
+  - 通常モード: FastAPIがメインアプリ、Gradioを`/`にマウント、HTMX UIを`/morphing`で提供
+  - `--share`モード: Gradioのトンネル機能を使用（HTMX UIは利用不可）
 
 ### 設定ファイル
 

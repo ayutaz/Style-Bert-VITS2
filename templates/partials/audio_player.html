@@ -1,0 +1,11 @@
+<div class="audio-player">
+    <audio controls autoplay>
+        <source src="data:audio/wav;base64,{{ audio_data }}" type="audio/wav">
+        お使いのブラウザはaudioタグに対応していません。
+    </audio>
+    {% if norm_ratio is defined %}
+    <div class="norm-indicator {% if norm_ratio <= 1.5 %}norm-safe{% elif norm_ratio <= 2.0 %}norm-warning{% else %}norm-danger{% endif %}">
+        ノルム比: {{ "%.2f"|format(norm_ratio) }}
+    </div>
+    {% endif %}
+</div>

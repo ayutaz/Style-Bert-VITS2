@@ -1,0 +1,26 @@
+<div class="style-pair">
+    <div class="form-group">
+        <label for="style-a-select">スタイル A</label>
+        <select name="style_a" id="style-a-select"
+                hx-post="/api/morphing/compute-norm"
+                hx-trigger="change"
+                hx-include="#style-b-select, [name='method']:checked, #ratio-slider"
+                hx-target="#norm-display">
+            {% for style in styles %}
+            <option value="{{ style }}">{{ style }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="style-b-select">スタイル B</label>
+        <select name="style_b" id="style-b-select"
+                hx-post="/api/morphing/compute-norm"
+                hx-trigger="change"
+                hx-include="#style-a-select, [name='method']:checked, #ratio-slider"
+                hx-target="#norm-display">
+            {% for style in styles %}
+            <option value="{{ style }}" {% if loop.last %}selected{% endif %}>{{ style }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+<div class="norm-indicator {% if norm_ratio <= 1.5 %}norm-safe{% elif norm_ratio <= 2.0 %}norm-warning{% else %}norm-danger{% endif %}">
+    ノルム比: {{ "%.2f"|format(norm_ratio) }}
+    {% if norm_ratio <= 1.5 %}
+    — 安全
+    {% elif norm_ratio <= 2.0 %}
+    — 注意
+    {% else %}
+    — 危険
+    {% endif %}
+</div>

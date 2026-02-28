@@ -81,6 +81,7 @@ cu124 = [
 webui = [
     "gradio>=4.32",
     "GPUtil",
+    "jinja2",
     "psutil",
     "umap-learn",
 ]

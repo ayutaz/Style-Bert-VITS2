@@ -10,11 +10,11 @@
 |-------|------|------|------|
 | **Phase 1** | コアライブラリ層 | **完了** | 100% |
 | **Phase 2** | 推論パイプライン拡張 | **完了** | 100% |
-| **Phase 3** | モーフィングUI | 未着手 | 0% |
+| **Phase 3** | モーフィングUI | **完了** | 100% |
 | **Phase 4** | ベクトル演算UI | 未着手 | 0% |
 | **Phase 5** | 統合・品質保証 | 未着手 | 0% |
 
-**次のステップ**: Phase 3 (モーフィングUI) または Phase 4 (ベクトル演算UI) に着手可能。
+**次のステップ**: Phase 4 (ベクトル演算UI) に着手可能。
 
 ---
 
@@ -23,14 +23,14 @@
 ```
 Phase 1: コアライブラリ層        ← 完了
 Phase 2: 推論パイプライン拡張    ← 完了
-Phase 3: モーフィングUI          ← Phase 1, 2 に依存（着手可能）
+Phase 3: モーフィングUI          ← 完了
 Phase 4: ベクトル演算UI          ← Phase 1, 2 に依存（着手可能）
 Phase 5: 統合・品質保証          ← 全フェーズ完了後
 ```
 
 ```
- Phase 1 (完了) ─┬─→ Phase 3 (モーフィングUI)
-                  │                              ──→ Phase 5 (統合・QA)
+ Phase 1 (完了) ─┬─→ Phase 3 (完了)
+                  │                    ──→ Phase 5 (統合・QA)
                   ├─→ Phase 4 (ベクトル演算UI)
                   │
  Phase 2 (完了) ─┘
@@ -140,62 +140,49 @@ else:
 
 ---
 
-## Phase 3: モーフィングUI (Gradio タブ) — 未着手
+## Phase 3: モーフィングUI (HTMX) — 完了
 
-**目的**: 2つのスタイル間のSLERP補間をGUIで操作できるようにする
+**目的**: 2つのスタイル間のSLERP/LERP補間をHTMXベースのGUIで操作できるようにする
 
-### 新規ファイル: `gradio_tabs/style_operations.py`
+**設計変更**: 当初はGradioタブとして計画していたが、HTMXベースのスタンドアロンUIとして実装。
+FastAPI + Jinja2テンプレート + HTMX による部分更新パターンを採用。
 
-#### 3.1 モーフィングサブタブのUI構成
+### 新規ファイル
 
-```
-┌─────────────────────────────────────────────────────┐
-│ スタイル操作 > モーフィング                           │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  モデル選択: [Dropdown: model_name]                  │
-│  モデルファイル: [Dropdown: model_path]               │
-│                                                     │
-│  ┌─ スタイルA ─────────┐  ┌─ スタイルB ─────────┐   │
-│  │ [Dropdown: style_A] │  │ [Dropdown: style_B] │   │
-│  └─────────────────────┘  └─────────────────────┘   │
-│                                                     │
-│  補間方法: ○ SLERP (推奨)  ○ LERP                   │
-│                                                     │
-│  補間率 (t): [====●===========] 0.30                 │
-│              A (0.0)        B (1.0)                  │
-│                                                     │
-│  ノルム状態: ● 安全 (比率: 1.02)                     │
-│                                                     │
-│  テキスト: [こんにちは、今日はいい天気ですね。]        │
-│                                                     │
-│  [音声プレビュー]  [スタイルとして保存]               │
-│                                                     │
-│  結果: [▶ Audio Player]                              │
-│                                                     │
-│  ┌─ ベクトル可視化 ─────────────────────────────┐   │
-│  │  [2D Plot: A, B, 補間結果の位置を表示]        │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
+| ファイル | 説明 |
+|----------|------|
+| `morphing_app.py` | FastAPI APIRouter — モーフィングUIのバックエンド |
+| `templates/morphing.html` | メインページテンプレート |
+| `templates/partials/style_options.html` | スタイル選択フラグメント |
+| `templates/partials/audio_player.html` | 音声プレーヤーフラグメント |
+| `templates/partials/norm_indicator.html` | ノルム安全インジケータ |
+| `static/css/morphing.css` | ダークテーマスタイルシート |
 
-#### 3.2 主要機能
-1. **モデル選択** — 既存パターン（model_name → model_path の2段階Dropdown）を再利用
-2. **スタイルA/B選択** — config.jsonのstyle2idからDropdown生成
-3. **補間方法** — SLERP / LERP のRadio選択
-4. **補間率スライダー** — `t: 0.0 ~ 1.0`、step=0.01
-5. **ノルム安全インジケータ** — 結果ベクトルのノルム比を色分け表示
-6. **音声プレビュー** — 補間結果で即座にTTS実行
-7. **保存機能** — 結果を新しいスタイルとして `style_vectors.npy` に追加
-8. **2Dプロット** — スタイルA, B, Neutral, 補間結果をUMAP/PCA等で2D可視化
+### 変更ファイル
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `app.py` | FastAPI + Gradio mount パターンに変更 |
+| `pyproject.toml` | jinja2 依存追加 |
+
+### APIエンドポイント
+
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | /morphing | メインページ |
+| GET | /api/morphing/model-files | モデルファイル一覧 |
+| POST | /api/morphing/load-model | モデルロード + スタイル取得 |
+| POST | /api/morphing/compute-norm | ノルム比計算 |
+| POST | /api/morphing/synthesize | 音声合成 |
+| POST | /api/morphing/save-style | スタイル保存 |
 
 ### 完了条件
-- [ ] モーフィングサブタブUI実装
-- [ ] SLERP/LERP補間が正しく動作
-- [ ] 音声プレビュー再生
-- [ ] ノルム安全インジケータ表示
-- [ ] スタイル保存機能
-- [ ] 2Dプロット可視化
+- [x] モーフィングUI実装 (HTMX + Jinja2)
+- [x] SLERP/LERP補間が正しく動作
+- [x] 音声プレビュー再生
+- [x] ノルム安全インジケータ表示
+- [x] スタイル保存機能
+- [ ] 2Dプロット可視化 → Phase 5 に移動
 
 ---
 
@@ -306,8 +293,14 @@ with gr.Blocks(theme=GRADIO_THEME) as app:
 | `style_bert_vits2/style_ops.py` | **新規** | 1 | **完了** |
 | `tests/test_style_ops.py` | **新規** | 1 | **完了** |
 | `style_bert_vits2/tts_model.py` | 変更 | 2 | **完了** |
-| `gradio_tabs/style_operations.py` | **新規** | 3, 4 | 未着手 |
-| `app.py` | 変更 | 5 | 未着手 |
+| `morphing_app.py` | **新規** | 3 | **完了** |
+| `templates/morphing.html` | **新規** | 3 | **完了** |
+| `templates/partials/*` | **新規** | 3 | **完了** |
+| `static/css/morphing.css` | **新規** | 3 | **完了** |
+| `app.py` | 変更 | 3, 5 | Phase 3 完了 |
+| `pyproject.toml` | 変更 | 3 | Phase 3 完了 |
+| `tests/test_morphing_api.py` | **新規** | 3 | **完了** |
+| `gradio_tabs/style_operations.py` | **新規** | 4 | 未着手 |
 | `docs/CHANGELOG.md` | 変更 | 5 | 未着手 |
 
 ---

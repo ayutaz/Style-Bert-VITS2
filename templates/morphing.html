@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モーフィング - Style-Bert-VITS2</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+    <link rel="stylesheet" href="/static/css/morphing.css">
+</head>
+<body>
+    <nav class="nav-bar">
+        <a href="/">&larr; 音声合成UIに戻る</a>
+        <h1>Style-Bert-VITS2 モーフィング</h1>
+    </nav>
+
+    <div class="morphing-container">
+        <!-- セクション1: モデル選択 -->
+        <div class="card">
+            <h2>モデル選択</h2>
+            <select name="model_name" id="model-name-select"
+                    hx-get="/api/morphing/model-files"
+                    hx-trigger="change"
+                    hx-target="#model-files-select"
+                    hx-include="this">
+                {% for name in model_names %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <select name="model_path" id="model-files-select">
+                <option value="">モデルを選択してください</option>
+            </select>
+            <button class="btn-primary"
+                    hx-post="/api/morphing/load-model"
+                    hx-include="#model-name-select, #model-files-select"
+                    hx-target="#style-selectors">
+                ロード
+            </button>
+        </div>
+
+        <!-- セクション2: スタイル設定 -->
+        <div class="card">
+            <h2>スタイル設定</h2>
+            <div id="style-selectors">
+                <p class="placeholder">モデルをロードしてください</p>
+            </div>
+        </div>
+
+        <!-- セクション3: 補間設定 -->
+        <div class="card">
+            <h2>補間設定</h2>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="method" value="slerp" checked>
+                    SLERP (推奨)
+                </label>
+                <label>
+                    <input type="radio" name="method" value="lerp">
+                    LERP
+                </label>
+            </div>
+            <div class="slider-group">
+                <label>補間率: <span id="ratio-display">0.50</span></label>
+                <div class="slider-labels">
+                    <span>A(0.0)</span>
+                    <span>B(1.0)</span>
+                </div>
+                <input type="range" id="ratio-slider" name="ratio"
+                       min="0" max="1" step="0.01" value="0.5"
+                       oninput="document.getElementById('ratio-display').textContent = parseFloat(this.value).toFixed(2)"
+                       hx-post="/api/morphing/compute-norm"
+                       hx-trigger="change"
+                       hx-include="#style-a-select, #style-b-select, [name='method']:checked"
+                       hx-target="#norm-display">
+            </div>
+            <div id="norm-display">
+                <span class="norm-indicator">ノルム比: -</span>
+            </div>
+        </div>
+
+        <!-- セクション4: 音声合成 -->
+        <div class="card">
+            <h2>音声合成</h2>
+            <textarea id="text-input" name="text" rows="3">こんにちは、今日はいい天気ですね。</textarea>
+            <div class="form-row">
+                <select id="language-select" name="language">
+                    <option value="JP">JP</option>
+                    <option value="EN">EN</option>
+                    <option value="ZH">ZH</option>
+                </select>
+                <input type="number" id="speaker-id" name="speaker_id" value="0" min="0">
+            </div>
+            <button class="btn-primary"
+                    hx-post="/api/morphing/synthesize"
+                    hx-include="#model-name-select, #model-files-select, #style-a-select, #style-b-select, [name='method']:checked, #ratio-slider, #text-input, #language-select, #speaker-id"
+                    hx-target="#audio-output"
+                    hx-indicator="#synth-loading">
+                合成
+            </button>
+            <span id="synth-loading" class="htmx-indicator">処理中...</span>
+            <div id="audio-output"></div>
+        </div>
+
+        <!-- セクション5: スタイル保存 -->
+        <div class="card">
+            <h2>スタイル保存</h2>
+            <input type="text" id="new-style-name" name="style_name" placeholder="例: HappySad_Mix">
+            <button class="btn-secondary"
+                    hx-post="/api/morphing/save-style"
+                    hx-include="#model-name-select, #style-a-select, #style-b-select, [name='method']:checked, #ratio-slider, #new-style-name"
+                    hx-target="#save-result">
+                保存
+            </button>
+            <div id="save-result"></div>
+        </div>
+    </div>
+</body>
+</html>
