@@ -30,8 +30,9 @@ uv run python server_editor.py --inbrowser  # エディターUI
 
 ### テスト
 ```bash
-uv run pytest -s tests/test_main.py::test_synthesize_cpu
-uv run pytest -s tests/test_main.py::test_synthesize_cuda
+uv run --only-group test pytest tests/test_style_ops.py -v  # style_ops 単体テスト (PyTorch不要)
+uv run pytest -s tests/test_main.py::test_synthesize_cpu     # 音声合成CPUテスト
+uv run pytest -s tests/test_main.py::test_synthesize_cuda    # 音声合成CUDAテスト
 ```
 
 ### コードスタイル
@@ -60,6 +61,11 @@ uv run black . && uv run isort --profile black .          # 自動修正
   - `japanese/`, `english/`, `chinese/`: 各言語のG2P、BERT特徴抽出、正規化
   - `japanese/pyopenjtalk_worker/`: GIL回避用のTCPソケットサーバーパターン
   - `japanese/user_dict/`: VOICEVOXベースのユーザー辞書 (LGPL v3)
+- **`style_ops.py`** — スタイルベクトル演算モジュール (Phase 1)
+  - 補間: `lerp()`, `slerp()` (LERPフォールバック付き球面線形補間)
+  - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
+  - 安全機構: `clip_norm()`, `compute_norm_ratio()`, `validate_style_vector()`
+  - I/O: `load_style_vectors()`, `save_style_vectors()`
 - **`constants.py`** — バージョン (`VERSION`)、デフォルトパラメータ、言語定義。hatchのバージョンソースでもある
 
 ### 推論データフロー
@@ -103,7 +109,7 @@ model_assets/{model_name}/
 ## 重要な設計判断
 
 - モデルは遅延ロード・明示的アンロード方式 (VRAM管理のため)
-- 日本語テキスト処理はpyopenjtalkのGIL問題を回避するため、別プロセスでTCPソケットサーバーとして動作
+- 日本語テキスト処理はpyopenjtalk-plusを使用。GIL問題を回避するため別プロセスでTCPソケットサーバーとして動作
 - スタイル制御は256次元のwespeaker話者埋め込みベースで、`style_weight`パラメータで効果の強さを連続的に調整可能
 - safetensors形式がデフォルトのモデル保存形式
 - ONNX推論はPyTorch非依存で動作可能（DirectML/CoreML対応）
