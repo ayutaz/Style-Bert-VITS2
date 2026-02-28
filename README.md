@@ -8,34 +8,17 @@ https://github.com/litagin02/Style-Bert-VITS2/assets/139731664/e853f9a2-db4a-420
 
 You can install via `pip install style-bert-vits2` (inference only), see [library.ipynb](/library.ipynb) for example usage.
 
-- **解説チュートリアル動画** [YouTube](https://youtu.be/aTUSzgDl1iY)　[ニコニコ動画](https://www.nicovideo.jp/watch/sm43391524)
 - [**よくある質問** (FAQ)](/docs/FAQ.md)
 - [🤗 オンラインデモはこちらから](https://huggingface.co/spaces/litagin/Style-Bert-VITS2-Editor-Demo)
 - [Zennの解説記事](https://zenn.dev/litagin/articles/034819a5256ff4)
 
 - [**リリースページ**](https://github.com/litagin02/Style-Bert-VITS2/releases/)、[更新履歴](/docs/CHANGELOG.md)
-  - 2025-08-24: Ver 2.7.0: 外部ライブラリ [Aivis Project](https://aivis-project.com/) 等との連携のため、ONNX変換のGUI追加、また音声認識モデルとして `litagin/anime-whisper` の追加等
-  - 2024-09-09: Ver 2.6.1: Google colabでうまく学習できない等のバグ修正のみ
-  - 2024-06-16: Ver 2.6.0 (モデルの差分マージ・加重マージ・ヌルモデルマージの追加、使い道については[この記事](https://zenn.dev/litagin/articles/1297b1dc7bdc79)参照)
-  - 2024-06-14: Ver 2.5.1 (利用規約をお願いへ変更したのみ)
-  - 2024-06-02: Ver 2.5.0 (**[利用規約](/docs/TERMS_OF_USE.md)の追加**、フォルダ分けからのスタイル生成、小春音アミ・あみたろモデルの追加、インストールの高速化等)
-  - 2024-03-16: ver 2.4.1 (**batファイルによるインストール方法の変更**)
-  - 2024-03-15: ver 2.4.0 (大規模リファクタリングや種々の改良、ライブラリ化)
-  - 2024-02-26: ver 2.3 (辞書機能とエディター機能)
-  - 2024-02-09: ver 2.2
-  - 2024-02-07: ver 2.1
-  - 2024-02-03: ver 2.0 (JP-Extra)
-  - 2024-01-09: ver 1.3
-  - 2023-12-31: ver 1.2
-  - 2023-12-29: ver 1.1
-  - 2023-12-27: ver 1.0
 
 This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2) v2.1 and Japanese-Extra, so many thanks to the original author!
 
 **概要**
 
 - 入力されたテキストの内容をもとに感情豊かな音声を生成する[Bert-VITS2](https://github.com/fishaudio/Bert-VITS2)のv2.1とJapanese-Extraを元に、感情や発話スタイルを強弱込みで自由に制御できるようにしたものです。
-- GitやPythonがない人でも（Windowsユーザーなら）簡単にインストールでき、学習もできます (多くを[EasyBertVits2](https://github.com/Zuntan03/EasyBertVits2/)からお借りしました)。
 - 音声合成のみに使う場合は、グラボがなくてもCPUで動作します。
 - 音声合成のみに使う場合、Pythonライブラリとして`pip install style-bert-vits2`でインストールできます。例は[library.ipynb](/library.ipynb)を参照してください。
 - 他との連携に使えるAPIサーバーも同梱しています ([@darai0512](https://github.com/darai0512) 様によるPRです、ありがとうございます)。
@@ -44,12 +27,11 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 
 ## 使い方
 
-- CLIでの使い方は[こちら](/docs/CLI.md)を参照してください。
 - [よくある質問](/docs/FAQ.md)も参照してください。
 
 ### 動作環境
 
-各UIとAPI Serverにおいて、Windows コマンドプロンプト・WSL2・Linux(Ubuntu Desktop)での動作を確認しています(WSLでのパス指定は相対パスなど工夫ください)。NVidiaのGPUが無い場合は学習はできませんが音声合成とマージは可能です。
+Windows コマンドプロンプト・WSL2・Linux(Ubuntu Desktop)での動作を確認しています。NVidiaのGPUが無い場合でも音声合成とマージは可能です。
 
 ### インストール
 
@@ -64,7 +46,7 @@ Pythonの仮想環境・パッケージ管理ツールである[uv](https://gith
 
 git clone https://github.com/litagin02/Style-Bert-VITS2.git
 cd Style-Bert-VITS2
-uv sync --group train                # 学習環境（推論のみの場合は --group infer）
+uv sync --group infer                # 推論環境
 uv run python initialize.py          # 必要なモデルとデフォルトTTSモデルをダウンロード
 ```
 
@@ -91,35 +73,6 @@ model_assets
 ```
 このように、推論には`config.json`と`*.safetensors`と`style_vectors.npy`が必要です。モデルを共有する場合は、この3つのファイルを共有してください。
 
-このうち`style_vectors.npy`はスタイルを制御するために必要なファイルで、学習の時にデフォルトで平均スタイル「Neutral」が生成されます。
-複数スタイルを使ってより詳しくスタイルを制御したい方は、下の「スタイルの生成」を参照してください（平均スタイルのみでも、学習データが感情豊かならば十分感情豊かな音声が生成されます）。
-
-### 学習
-
-- CLIでの学習の詳細は[こちら](docs/CLI.md)を参照してください。
-- paperspace上での学習の詳細は[こちら](docs/paperspace.md)を参照してください。
-
-学習には2-14秒程度の音声ファイルが複数と、それらの書き起こしデータが必要です。
-
-- 既存コーパスなどですでに分割された音声ファイルと書き起こしデータがある場合はそのまま（必要に応じて書き起こしファイルを修正して）使えます。下の「学習WebUI」を参照してください。
-- そうでない場合、（長さは問わない）音声ファイルのみがあれば、そこから学習にすぐに使えるようにデータセットを作るためのツールを同梱しています。
-
-#### データセット作り
-
-- `uv run python app.py`の「データセット作成」タブから、音声ファイルを適切な長さにスライスし、その後に文字の書き起こしを自動で行えます。単独タブは`uv run python -m gradio_tabs.dataset`でも開けます。
-- 指示に従った後、下の「学習」タブでそのまま学習を行うことができます。
-
-#### 学習WebUI
-
-- `uv run python app.py`の「学習」タブから指示に従ってください。単独タブは`uv run python -m gradio_tabs.train`でも開けます。
-
-### スタイルの生成
-
-- デフォルトでは、デフォルトスタイル「Neutral」の他、学習フォルダのフォルダ分けに応じたスタイルが生成されます。
-- それ以外の方法で手動でスタイルを作成したい人向けです。
-- `uv run python app.py`の「スタイル作成」タブから、音声ファイルを使ってスタイルを生成できます。単独タブは`uv run python -m gradio_tabs.style_vectors`でも開けます。
-- 学習とは独立しているので、学習中でもできるし、学習が終わっても何度もやりなおせます（前処理は終わらせている必要があります）。
-
 ### API Server
 
 `uv run python server_fastapi.py`でAPIサーバーが起動します。
@@ -137,30 +90,16 @@ API仕様は起動後に`/docs`にて確認ください。
 2つのモデルを、「声質」「声の高さ」「感情表現」「テンポ」の4点で混ぜ合わせて、新しいモデルを作ったり、また「あるモデルに、別の2つのモデルの差分を足す」等の操作ができます。
 `uv run python app.py`の「マージ」タブから、2つのモデルを選択してマージすることができます。単独タブは`uv run python -m gradio_tabs.merge`でも開けます。
 
-### ONNX変換
-
-タブの「ONNX変換」（`uv run python -m gradio_tabs.convert_onnx`）から、学習済みsafetensorsファイルをONNX形式に変換することができます。これは外部ライブラリ等でONNX形式ファイルが必要な場合に使えます。例えば [Aivis Project](https://aivis-project.com/) では [AIVM Generator](https://aivm-generator.aivis-project.com/) を使って、safetensorsファイルとONNXファイルからAivis Speech用のモデルを作成できます。
-
-### 自然性評価
-
-学習結果のうちどのステップ数がいいかの「一つの」指標として、[SpeechMOS](https://github.com/tarepan/SpeechMOS) を使うスクリプトを用意しています:
-```bash
-uv run python speech_mos.py -m <model_name>
-```
-ステップごとの自然性評価が表示され、`mos_results`フォルダの`mos_{model_name}.csv`と`mos_{model_name}.png`に結果が保存される。読み上げさせたい文章を変えたかったら中のファイルを弄って各自調整してください。またあくまでアクセントや感情表現や抑揚を全く考えない基準での評価で、目安のひとつなので、実際に読み上げさせて選別するのが一番だと思います。
-
 ## Bert-VITS2との関係
 
 基本的にはBert-VITS2のモデル構造を少し改造しただけです。[旧事前学習モデル](https://huggingface.co/litagin/Style-Bert-VITS2-1.0-base)も[JP-Extraの事前学習モデル](https://huggingface.co/litagin/Style-Bert-VITS2-2.0-base-JP-Extra)も、実質Bert-VITS2 v2.1 or JP-Extraと同じものを使用しています（不要な重みを削ってsafetensorsに変換したもの）。
 
 具体的には以下の点が異なります。
 
-- [EasyBertVits2](https://github.com/Zuntan03/EasyBertVits2)のように、PythonやGitを知らない人でも簡単に使える。
 - 感情埋め込みのモデルを変更（256次元の[wespeaker-voxceleb-resnet34-LM](https://huggingface.co/pyannote/wespeaker-voxceleb-resnet34-LM)へ、感情埋め込みというよりは話者識別のための埋め込み）
 - 感情埋め込みもベクトル量子化を取り払い、単なる全結合層に。
 - スタイルベクトルファイル`style_vectors.npy`を作ることで、そのスタイルを使って効果の強さも連続的に指定しつつ音声を生成することができる。
 - 各種WebUIを作成
-- bf16での学習のサポート
 - safetensors形式のサポート、デフォルトでsafetensorsを使用するように
 - その他軽微なbugfixやリファクタリング
 

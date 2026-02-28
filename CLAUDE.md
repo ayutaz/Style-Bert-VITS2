@@ -9,21 +9,20 @@ Style-Bert-VITS2は、Bert-VITS2 v2.1をベースにした日本語/多言語対
 - Pythonライブラリ (`pip install style-bert-vits2`) としても、WebUI/APIサーバーとしても利用可能
 - 対応言語: JP (日本語), EN (英語), ZH (中国語)
 - JP-Extraモデル: 日本語特化の高品質モデルバリアント（JP以外の言語は使用不可）
+- **このブランチは推論専用**: 学習・前処理・データセット作成機能は削除済み
 
 ## よく使うコマンド
 
 ### 環境構築
 ```bash
-uv sync                              # 全依存インストール（開発環境フル）
-uv sync --group train                # 学習環境のみ
-uv sync --group infer                # 推論環境のみ
+uv sync --group infer                # 推論環境
 uv sync --only-group style           # スタイルチェックのみ
 python initialize.py                  # BERTモデル・デフォルトTTSモデルのダウンロード
 ```
 
 ### 起動
 ```bash
-uv run python app.py                        # WebUI (Gradio、6タブ構成)
+uv run python app.py                        # WebUI (Gradio、音声合成+マージ)
 uv run python app.py --device cpu           # CPUモード
 uv run python server_fastapi.py             # FastAPI サーバー (port 5000)
 uv run python server_editor.py --inbrowser  # エディターUI
@@ -42,21 +41,6 @@ uv run isort --check-only --profile black .               # isortチェック
 uv run black . && uv run isort --profile black .          # 自動修正
 ```
 
-### 学習パイプライン (CLI)
-```bash
-uv run python slice.py --model_name <name>              # 音声スライス
-uv run python transcribe.py --model_name <name>         # 書き起こし
-uv run python preprocess_all.py -m <name> [--use_jp_extra]  # 前処理一括
-uv run python train_ms.py                               # 通常モデル学習
-uv run python train_ms_jp_extra.py                      # JP-Extraモデル学習
-```
-
-### その他
-```bash
-uv run python convert_onnx.py          # ONNX変換
-uv run python speech_mos.py -m <name>  # 自然性評価 (SpeechMOS)
-```
-
 ## アーキテクチャ
 
 ### コアパッケージ: `style_bert_vits2/`
@@ -67,8 +51,8 @@ uv run python speech_mos.py -m <name>  # 自然性評価 (SpeechMOS)
   - `TTSModel`: 単一モデルの読み込み・推論・アンロード。safetensorsとONNXの両方に対応
   - `TTSModelHolder`: 複数モデルの管理。`model_assets/` 配下のモデルを自動検出
 - **`models/`** — ニューラルネットワーク本体
-  - `models.py`: 標準VITS2アーキテクチャ (`SynthesizerTrn`, `MultiPeriodDiscriminator`)
-  - `models_jp_extra.py`: JP-Extra版 (WavLMベースの判別器を追加)
+  - `models.py`: 標準VITS2アーキテクチャ (`SynthesizerTrn`)
+  - `models_jp_extra.py`: JP-Extra版
   - `infer.py`: モデルバリアント選択ヘルパー `get_net_g()`
   - `hyper_parameters.py`: Pydanticベースの設定モデル
 - **`nlp/`** — テキスト処理 (言語ごとにサブディレクトリ)
@@ -93,30 +77,17 @@ uv run python speech_mos.py -m <name>  # 自然性評価 (SpeechMOS)
 
 ### WebUI: `gradio_tabs/`
 
-`app.py` がGradioアプリのエントリポイント。6つのタブ:
+`app.py` がGradioアプリのエントリポイント。2つのタブ:
 - `inference.py`: 音声合成
-- `dataset.py`: データセット作成
-- `train.py`: 学習
-- `style_vectors.py`: スタイル生成
 - `merge.py`: モデルマージ
-- `convert_onnx.py`: ONNX変換
 
 ### APIサーバー
 
 - `server_fastapi.py`: FastAPIベースのREST API (ポート5000)。`/docs`でSwagger UI
 - `server_editor.py`: エディター専用API
 
-### 学習関連 (トップレベルスクリプト)
-
-- `train_ms.py` / `train_ms_jp_extra.py`: 学習メインスクリプト
-- `preprocess_all.py`: 前処理パイプライン一括実行
-- `bert_gen.py`: BERT特徴抽出
-- `style_gen.py` / `default_style.py`: スタイルベクトル生成
-- `data_utils.py`: データセットローダー
-
 ### 設定ファイル
 
-- `configs/config.json` / `config_jp_extra.json`: モデルハイパーパラメータテンプレート
 - `configs/default_paths.yml`: データセット・アセットのルートパス定義
 - `config.yml` (実行時生成): `default_config.yml` から生成されるユーザー設定
 

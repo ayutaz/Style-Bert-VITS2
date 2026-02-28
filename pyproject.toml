@@ -87,21 +87,7 @@ webui = [
     "umap-learn",
 ]
 
-# 学習パイプライン（cu124 + webui を含む）
-train = [
-    { include-group = "cu124" },
-    { include-group = "webui" },
-    "faster-whisper>=1.0.0",
-    "librosa==0.9.2",
-    "protobuf==4.25",
-    "punctuators",
-    "pyloudnorm",
-    "stable_ts",
-    "tensorboard",
-    "pyannote.audio>=3.1.0",
-]
-
-# 推論のみ（cu124 + webui を含む、学習ツール不要）
+# 推論（cu124 + webui を含む）
 infer = [
     { include-group = "cu124" },
     { include-group = "webui" },
@@ -132,7 +118,7 @@ style = [
 
 # 開発環境（全部入り）
 dev = [
-    { include-group = "train" },
+    { include-group = "infer" },
     { include-group = "onnx" },
     { include-group = "test" },
     { include-group = "style" },
