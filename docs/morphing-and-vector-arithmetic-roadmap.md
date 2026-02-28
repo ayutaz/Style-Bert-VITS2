@@ -271,8 +271,10 @@ fastapi_app.include_router(vector_router)
 - [x] 統合テスト — モジュールインポート、API一貫性 (`tests/test_integration.py`)
 
 ### 5.3 コードスタイル
-- [x] `uv run black --check .` がパス (全67ファイル、bert_models.py・tts_model.py の `# fmt: skip` 起因バグも修正済み)
-- [x] `uv run isort --check-only --profile black .` がパス
+- [x] black + isort から ruff に完全移行
+- [x] `uv run ruff check .` がパス (ルールセット: E, F, W, I, UP, B, SIM, RUF)
+- [x] `uv run ruff format --check .` がパス (全67ファイル)
+- [x] per-file-ignores で upstream ML/NLP コードを適切に除外
 - [x] docstring監査完了（日本語、Google style）
 
 ### 5.4 ドキュメント

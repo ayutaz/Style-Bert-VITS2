@@ -39,8 +39,13 @@
 - 2Dスタイルベクトル可視化 (PCA射影)
 - エッジケーステスト追加 (27件: `tests/test_edge_cases.py`)
 - 統合テスト追加 (8件: `tests/test_integration.py`)
-- 全コードベースの black / isort フォーマット統一
 - 各UIにインタラクティブ使い方ガイド追加
+
+#### コード品質基盤
+- black + isort から ruff に完全移行（リンター + フォーマッター統合）
+- ruff ルールセット: E, F, W, I, UP, B, SIM, RUF
+- ruff check --fix による275件の自動修正（Python 3.12モダン構文化、importソート等）
+- per-file-ignores で upstream ML/NLP コードを適切に除外
 
 ### 変更 (Changed)
 - `app.py`: Gradio単独起動 → FastAPI + Gradio マウントパターンに変更
@@ -50,6 +55,7 @@
 
 ### 依存関係 (Dependencies)
 - `jinja2` を webui 依存グループに追加 (テンプレートエンジン)
+- `ruff` を style 依存グループに追加（`black[jupyter]` + `isort` を置き換え）
 
 ### 新規ファイル一覧
 
