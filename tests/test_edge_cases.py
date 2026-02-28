@@ -15,6 +15,7 @@ from style_bert_vits2.style_ops import (
     vector_scale,
 )
 
+
 DIM = 256
 
 

@@ -4,7 +4,7 @@ import gc
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import onnxruntime
@@ -27,7 +27,8 @@ from style_bert_vits2.logging import logger
 from style_bert_vits2.models.hyper_parameters import HyperParameters
 from style_bert_vits2.voice import adjust_voice
 
-DEFAULT_ONNX_PROVIDERS: list[Union[str, tuple[str, dict[str, Any]]]] = [
+
+DEFAULT_ONNX_PROVIDERS: list[str | tuple[str, dict[str, Any]]] = [
     ("CPUExecutionProvider", {"arena_extend_strategy": "kSameAsRequested"})
 ]
 
@@ -61,11 +62,11 @@ class TTSModel:
     def __init__(
         self,
         model_path: Path,
-        config_path: Union[Path, HyperParameters],
-        style_vec_path: Union[Path, NDArray[Any]],
+        config_path: Path | HyperParameters,
+        style_vec_path: Path | NDArray[Any],
         device: str = "cpu",
         onnx_providers: Sequence[
-            Union[str, tuple[str, dict[str, Any]]]
+            str | tuple[str, dict[str, Any]]
         ] = DEFAULT_ONNX_PROVIDERS,
     ) -> None:
         """
@@ -82,9 +83,7 @@ class TTSModel:
 
         self.model_path: Path = model_path
         self.device: str = device
-        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = (
-            onnx_providers
-        )
+        self.onnx_providers: Sequence[str | tuple[str, dict[str, Any]]] = onnx_providers
 
         # ONNX 形式のモデルかどうか
         if self.model_path.suffix == ".onnx":
@@ -129,14 +128,14 @@ class TTSModel:
             raise ValueError(
                 f"The number of styles ({num_styles}) does not match the number of style vectors ({self.style_vectors.shape[0]})"
             )
-        self.style_vector_inference: Optional[Any] = None
+        self.style_vector_inference: Any | None = None
 
         # net_g / null_model_params は PyTorch 推論時のみ遅延初期化される
-        self.net_g: Union[SynthesizerTrn, SynthesizerTrnJPExtra, None] = None
-        self.null_model_params: Optional[dict[int, NullModelParam]] = None
+        self.net_g: SynthesizerTrn | SynthesizerTrnJPExtra | None = None
+        self.null_model_params: dict[int, NullModelParam] | None = None
 
         # onnx_session は ONNX 推論時のみ遅延初期化される
-        self.onnx_session: Optional[onnxruntime.InferenceSession] = None
+        self.onnx_session: onnxruntime.InferenceSession | None = None
 
     def load(self) -> None:
         """
@@ -298,15 +297,14 @@ class TTSModel:
         """
 
         if self.style_vector_inference is None:
-
             # pyannote.audio は scikit-learn などの大量の重量級ライブラリに依存しているため、
             # TTSModel.infer() に reference_audio_path を指定し音声からスタイルベクトルを推論する場合のみ遅延 import する
             try:
                 import pyannote.audio
-            except ImportError:
+            except ImportError as err:
                 raise ImportError(
                     "pyannote.audio is required to infer style vector from audio"
-                )
+                ) from err
 
             # スタイルベクトルを取得するための推論モデルを初期化
             import torch
@@ -370,25 +368,25 @@ class TTSModel:
         text: str,
         language: Languages = Languages.JP,
         speaker_id: int = 0,
-        reference_audio_path: Optional[str] = None,
+        reference_audio_path: str | None = None,
         sdp_ratio: float = DEFAULT_SDP_RATIO,
         noise: float = DEFAULT_NOISE,
         noise_w: float = DEFAULT_NOISEW,
         length: float = DEFAULT_LENGTH,
         line_split: bool = DEFAULT_LINE_SPLIT,
         split_interval: float = DEFAULT_SPLIT_INTERVAL,
-        assist_text: Optional[str] = None,
+        assist_text: str | None = None,
         assist_text_weight: float = DEFAULT_ASSIST_TEXT_WEIGHT,
         use_assist_text: bool = False,
         style: str = DEFAULT_STYLE,
         style_weight: float = DEFAULT_STYLE_WEIGHT,
-        given_phone: Optional[list[str]] = None,
-        given_tone: Optional[list[int]] = None,
+        given_phone: list[str] | None = None,
+        given_tone: list[int] | None = None,
         pitch_scale: float = 1.0,
         intonation_scale: float = 1.0,
-        null_model_params: Optional[dict[int, NullModelParam]] = None,
+        null_model_params: dict[int, NullModelParam] | None = None,
         force_reload_model: bool = False,
-        style_vector_override: Optional[NDArray[Any]] = None,
+        style_vector_override: NDArray[Any] | None = None,
     ) -> tuple[int, NDArray[Any]]:
         """
         テキストから音声を合成する。
@@ -601,7 +599,7 @@ class TTSModelHolder:
         self,
         model_root_dir: Path,
         device: str,
-        onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]],
+        onnx_providers: Sequence[str | tuple[str, dict[str, Any]]],
         ignore_onnx: bool = False,
     ) -> None:
         """
@@ -629,12 +627,10 @@ class TTSModelHolder:
 
         self.root_dir: Path = model_root_dir
         self.device: str = device
-        self.onnx_providers: Sequence[Union[str, tuple[str, dict[str, Any]]]] = (
-            onnx_providers
-        )
+        self.onnx_providers: Sequence[str | tuple[str, dict[str, Any]]] = onnx_providers
         self.ignore_onnx: bool = ignore_onnx
         self.model_files_dict: dict[str, list[Path]] = {}
-        self.current_model: Optional[TTSModel] = None
+        self.current_model: TTSModel | None = None
         self.model_names: list[str] = []
         self.models_info: list[TTSModelInfo] = []
         self.refresh()

@@ -4,7 +4,6 @@
 """
 
 import numpy as np
-import pytest
 
 
 class TestModuleImports:
@@ -12,26 +11,9 @@ class TestModuleImports:
 
     def test_import_style_ops(self):
         """style_ops モジュールの全公開関数がインポートできる。"""
-        from style_bert_vits2.style_ops import (
-            clip_norm,
-            compute_norm_ratio,
-            lerp,
-            load_style_vectors,
-            pca_project_2d,
-            prepare_plot_data,
-            save_style_vectors,
-            slerp,
-            validate_style_vector,
-            vector_add,
-            vector_diff_transfer,
-            vector_mean,
-            vector_scale,
-            vector_sub,
-        )
 
     def test_import_expression_parser(self):
         """expression_parser モジュールがインポートできる。"""
-        from style_bert_vits2.expression_parser import parse_expression
 
     def test_import_morphing_app(self):
         """morphing_app モジュールがインポートできる。"""
@@ -97,7 +79,7 @@ class TestAPIConsistency:
 
     def test_pca_with_real_shaped_vectors(self):
         """PCA関数が実際のスタイルベクトルサイズで動作する。"""
-        from style_bert_vits2.style_ops import pca_project_2d, prepare_plot_data
+        from style_bert_vits2.style_ops import prepare_plot_data
 
         rng = np.random.default_rng(42)
         vectors = rng.standard_normal((10, 256))

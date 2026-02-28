@@ -41,9 +41,9 @@ uv run pytest -s tests/test_main.py::test_synthesize_cuda    # 音声合成CUDA�
 
 ### コードスタイル
 ```bash
-uv run black --check .                                    # blackチェック
-uv run isort --check-only --profile black .               # isortチェック
-uv run black . && uv run isort --profile black .          # 自動修正
+uv run ruff check .                                       # リントチェック
+uv run ruff format --check .                              # フォーマットチェック
+uv run ruff check --fix . && uv run ruff format .         # 自動修正
 ```
 
 ## アーキテクチャ

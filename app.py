@@ -19,6 +19,7 @@ from style_bert_vits2.tts_model import TTSModelHolder
 from style_bert_vits2.utils import torch_device_to_onnx_providers
 from vector_app import router as vector_router
 
+
 # このプロセスからはワーカーを起動して辞書を使いたいので、ここで初期化
 pyopenjtalk_worker.initialize_worker()
 

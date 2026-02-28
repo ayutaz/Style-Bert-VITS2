@@ -2,6 +2,7 @@ from loguru import logger
 
 from style_bert_vits2.utils.stdout_wrapper import SAFE_STDOUT
 
+
 # Remove all default handlers
 logger.remove()
 

@@ -9,7 +9,7 @@
 - ベクトル演算: `vector_add()`, `vector_sub()`, `vector_mean()`, `vector_scale()`, `vector_diff_transfer()`
 - 安全機構: `clip_norm()` (ノルムクリッピング), `compute_norm_ratio()`, `validate_style_vector()`
 - I/Oユーティリティ: `load_style_vectors()`, `save_style_vectors()`
-- ユニットテスト 37件 (`tests/test_style_ops.py`)
+- ユニットテスト 43件 (`tests/test_style_ops.py`)
 
 #### Phase 2: 推論パイプライン拡張 (`style_bert_vits2/tts_model.py`)
 - `TTSModel.infer()` に `style_vector_override` パラメータ追加

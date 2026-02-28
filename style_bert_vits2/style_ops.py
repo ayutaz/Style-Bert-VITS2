@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
+
 # ============================================================
 # 1.1 Interpolation Functions
 # ============================================================
@@ -308,7 +309,7 @@ def pca_project_2d(vectors: np.ndarray) -> np.ndarray:
 
     centered = vectors - vectors.mean(axis=0)
     # SVD で主成分を抽出
-    U, S, Vt = np.linalg.svd(centered, full_matrices=False)
+    _U, _S, Vt = np.linalg.svd(centered, full_matrices=False)
     # 上位2成分に射影
     return centered @ Vt[:2].T
 

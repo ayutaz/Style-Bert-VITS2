@@ -4,6 +4,7 @@ import cn2an
 
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
+
 __REPLACE_MAP = {
     "：": ",",
     "；": ",",

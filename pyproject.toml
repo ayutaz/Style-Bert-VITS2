@@ -111,8 +111,7 @@ test = [
 
 # コードスタイル
 style = [
-    "black[jupyter]",
-    "isort",
+    "ruff",
 ]
 
 # 開発環境（全部入り）
@@ -152,14 +151,37 @@ tests = ["tests", "*/style-bert-vits2/tests"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
-[tool.black]
-target-version = ["py312"]
-
-[tool.isort]
-profile = "black"
-
 [tool.ruff]
-extend-select = ["I"]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # Ruff独自ルール
+]
+ignore = [
+    "E501",    # line-too-long (formatterに任せる)
+    "B905",    # zip-without-explicit-strict (既存コードで大量使用、strict=True追加は動作変更リスクあり)
+    "RUF001",  # 日本語文字列中のUnicode（日本語プロジェクトでは正常）
+    "RUF002",  # 日本語docstring中のUnicode
+    "RUF003",  # 日本語コメント中のUnicode
+    "RUF005",  # collection-literal-concatenation (スタイル的な好みで既存コードの可読性を維持)
+]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**" = ["S101", "RUF028", "RUF059", "SIM108"]
+"style_bert_vits2/models/**" = ["E741", "E722", "B006", "B007", "B904", "E712", "SIM", "RUF034", "RUF059"]
+"style_bert_vits2/nlp/**" = ["E741", "E722", "E731", "B007", "B904", "SIM", "RUF017", "RUF028", "UP030", "UP031", "UP035", "UP042"]
+"style_bert_vits2/utils/strenum.py" = ["UP031", "UP042", "SIM102"]
+"style_bert_vits2/utils/stdout_wrapper.py" = ["F401", "SIM115"]

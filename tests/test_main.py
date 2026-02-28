@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import Any, Literal
 
-import numpy as np
 import pytest
 from scipy.io import wavfile
 
@@ -21,11 +20,9 @@ def synthesize(
     # 音声合成モデルが配置されていれば、音声合成を実行
     model_holder = TTSModelHolder(BASE_DIR / "model_assets", device, onnx_providers)
     if len(model_holder.models_info) > 0:
-
         # "koharune-ami" または "amitaro" モデルを探す
         for model_info in model_holder.models_info:
             if model_info.name == "koharune-ami" or model_info.name == "amitaro":
-
                 # Safetensors 形式または ONNX 形式のモデルファイルに絞り込む
                 if inference_type == "torch":
                     model_files = [
@@ -68,7 +65,6 @@ def synthesize(
 
                     # 各サンプルテキストに対して音声合成を実行
                     for i, text in enumerate(sample_texts):
-
                         # 音声合成を実行
                         sample_rate, audio_data = model.infer(
                             text,
@@ -120,7 +116,13 @@ def test_synthesize_onnx_cuda():
     synthesize(
         inference_type="onnx",
         onnx_providers=[
-            ("CUDAExecutionProvider", {"arena_extend_strategy": "kSameAsRequested", "cudnn_conv_algo_search": "DEFAULT"}),  # fmt: skip
+            (
+                "CUDAExecutionProvider",
+                {
+                    "arena_extend_strategy": "kSameAsRequested",
+                    "cudnn_conv_algo_search": "DEFAULT",
+                },
+            ),  # fmt: skip
         ],
     )
 

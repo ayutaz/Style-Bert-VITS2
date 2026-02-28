@@ -7,6 +7,7 @@ from pypinyin import Style, lazy_pinyin
 from style_bert_vits2.nlp.chinese.tone_sandhi import ToneSandhi
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
+
 with open(Path(__file__).parent / "opencpop-strict.txt", encoding="utf-8") as f:
     __PINYIN_TO_SYMBOL_MAP = {
         line.split("\t")[0]: line.strip().split("\t")[1] for line in f.readlines()

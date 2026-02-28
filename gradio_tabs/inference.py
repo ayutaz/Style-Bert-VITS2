@@ -1,7 +1,6 @@
 import datetime
 import json
 from pathlib import Path
-from typing import Optional
 
 import gradio as gr
 
@@ -25,6 +24,7 @@ from style_bert_vits2.nlp.japanese.g2p_utils import g2kata_tone, kata_tone2phone
 from style_bert_vits2.nlp.japanese.normalizer import normalize_text
 from style_bert_vits2.tts_model import NullModelParam, TTSModelHolder
 from style_bert_vits2.utils import torch_device_to_onnx_providers
+
 
 # pyopenjtalk_worker を起動
 ## pyopenjtalk_worker は TCP ソケットサーバーのため、ここで起動する
@@ -266,7 +266,7 @@ def create_inference_app(model_holder: TTSModelHolder) -> gr.Blocks:
         logger.debug(f"Null models setting: {null_models}")
 
         wrong_tone_message = ""
-        kata_tone: Optional[list[tuple[str, int]]] = None
+        kata_tone: list[tuple[str, int]] | None = None
         if use_tone and kata_tone_json_str != "":
             if language != "JP":
                 logger.warning("Only Japanese is supported for tone generation.")
@@ -289,7 +289,7 @@ def create_inference_app(model_holder: TTSModelHolder) -> gr.Blocks:
                 kata_tone = None
 
         # toneは実際に音声合成に代入される際のみnot Noneになる
-        tone: Optional[list[int]] = None
+        tone: list[int] | None = None
         if kata_tone is not None:
             phone_tone = kata_tone2phone_tone(kata_tone)
             tone = [t for _, t in phone_tone]
@@ -410,7 +410,7 @@ def create_inference_app(model_holder: TTSModelHolder) -> gr.Blocks:
                     label="改行ごとに挟む無音の長さ（秒）",
                 )
                 line_split.change(
-                    lambda x: (gr.Slider(visible=x)),
+                    lambda x: gr.Slider(visible=x),
                     inputs=[line_split],
                     outputs=[split_interval],
                 )
@@ -420,7 +420,7 @@ def create_inference_app(model_holder: TTSModelHolder) -> gr.Blocks:
                 )
                 use_tone = gr.Checkbox(label="アクセント調整を使う", value=False)
                 use_tone.change(
-                    lambda x: (gr.Checkbox(value=False) if x else gr.Checkbox()),
+                    lambda x: gr.Checkbox(value=False) if x else gr.Checkbox(),
                     inputs=[use_tone],
                     outputs=[line_split],
                 )

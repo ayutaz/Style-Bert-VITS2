@@ -2,6 +2,7 @@ from pathlib import Path
 
 from style_bert_vits2.utils.strenum import StrEnum
 
+
 # Style-Bert-VITS2 のバージョン
 VERSION = "2.7.0"
 

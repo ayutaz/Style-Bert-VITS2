@@ -5,7 +5,6 @@ import pytest
 
 from style_bert_vits2.style_ops import (
     clip_norm,
-    compute_norm_ratio,
     validate_style_vector,
     vector_diff_transfer,
     vector_mean,

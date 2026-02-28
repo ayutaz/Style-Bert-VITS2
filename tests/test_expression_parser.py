@@ -4,6 +4,7 @@ import pytest
 
 from style_bert_vits2.expression_parser import parse_expression
 
+
 DEFAULT_STYLES = ["Happy", "Sad", "Neutral"]
 
 

@@ -7,6 +7,7 @@ from style_bert_vits2.nlp import bert_models
 from style_bert_vits2.nlp.english.cmudict import get_dict
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS, SYMBOLS
 
+
 # Initialize global variables once
 ARPA = {
     "AH0",

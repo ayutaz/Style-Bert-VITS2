@@ -32,6 +32,7 @@ from style_bert_vits2.style_ops import (
     validate_style_vector,
 )
 
+
 router = APIRouter()
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))

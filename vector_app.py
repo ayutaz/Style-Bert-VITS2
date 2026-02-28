@@ -13,7 +13,6 @@ from __future__ import annotations
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import scipy.io.wavfile
@@ -31,9 +30,9 @@ from style_bert_vits2.style_ops import (
     save_style_vectors,
     validate_style_vector,
     vector_diff_transfer,
-    vector_mean,
     vector_scale,
 )
+
 
 router = APIRouter()
 

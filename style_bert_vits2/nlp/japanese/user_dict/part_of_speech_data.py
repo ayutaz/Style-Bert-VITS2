@@ -5,8 +5,6 @@
 詳しくは、このファイルと同じフォルダにある README.md を参照してください。
 """
 
-from typing import Dict
-
 from style_bert_vits2.nlp.japanese.user_dict.word_model import (
     USER_DICT_MAX_PRIORITY,
     USER_DICT_MIN_PRIORITY,
@@ -14,10 +12,11 @@ from style_bert_vits2.nlp.japanese.user_dict.word_model import (
     WordTypes,
 )
 
+
 MIN_PRIORITY = USER_DICT_MIN_PRIORITY
 MAX_PRIORITY = USER_DICT_MAX_PRIORITY
 
-part_of_speech_data: Dict[WordTypes, PartOfSpeechDetail] = {
+part_of_speech_data: dict[WordTypes, PartOfSpeechDetail] = {
     WordTypes.PROPER_NOUN: PartOfSpeechDetail(
         part_of_speech="名詞",
         part_of_speech_detail_1="固有名詞",

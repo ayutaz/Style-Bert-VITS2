@@ -21,6 +21,7 @@ from style_bert_vits2.style_ops import (
     vector_sub,
 )
 
+
 DIM = 256
 
 
@@ -338,7 +339,7 @@ class TestUtilities:
     def test_save_preserves_other_config_fields(self, tmp_path, rng):
         """save時に既存のconfig.jsonの他のフィールドが保持される。"""
         model_name = "test_model"
-        _, _, original_config = self._create_test_model(tmp_path, model_name, rng)
+        _, _, _ = self._create_test_model(tmp_path, model_name, rng)
 
         new_style2id = {"Neutral": 0}
         new_vectors = rng.standard_normal((1, DIM)).astype(np.float32)

@@ -5,6 +5,7 @@ from num2words import num2words
 
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
+
 # 記号類の正規化マップ
 __REPLACE_MAP = {
     "：": ",",
@@ -71,7 +72,8 @@ __PUNCTUATION_CLEANUP_PATTERN = re.compile(
     # ↓ ギリシャ文字
     + r"\u0370-\u03FF\u1F00-\u1FFF"
     # ↓ "!", "?", "…", ",", ".", "'", "-", 但し`…`はすでに`...`に変換されている
-    + "".join(PUNCTUATIONS) + r"]+",  # fmt: skip
+    + "".join(PUNCTUATIONS)
+    + r"]+",  # fmt: skip
 )
 # 数字・通貨記号の正規化パターン
 __CURRENCY_MAP = {"$": "ドル", "¥": "円", "£": "ポンド", "€": "ユーロ"}
