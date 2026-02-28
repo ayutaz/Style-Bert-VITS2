@@ -55,40 +55,27 @@ This repository is based on [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2
 
 Pythonライブラリとしてのpipでのインストールや使用例は[library.ipynb](/library.ipynb)を参照してください。
 
-#### GitやPythonに馴染みが無い方
-
-Windowsを前提としています。
-
-1. [このzipファイル](https://github.com/litagin02/Style-Bert-VITS2/releases/latest/download/sbv2.zip)を**パスに日本語や空白が含まれない場所に**ダウンロードして展開します。
-  - グラボがある方は、`Install-Style-Bert-VITS2.bat`をダブルクリックします。
-  - グラボがない方は、`Install-Style-Bert-VITS2-CPU.bat`をダブルクリックします。CPU版では学習はできませんが、音声合成とマージは可能です。
-2. 待つと自動で必要な環境がインストールされます。
-3. その後、自動的に音声合成するためのエディターが起動したらインストール成功です。デフォルトのモデルがダウンロードされるているので、そのまま遊ぶことができます。
-
-またアップデートをしたい場合は、`Update-Style-Bert-VITS2.bat`をダブルクリックしてください。
-
-ただし2024-03-16の**2.4.1**バージョン未満からのアップデートの場合は、全てを削除してから再びインストールする必要があります。申し訳ありません。移行方法は[CHANGELOG.md](/docs/CHANGELOG.md)を参照してください。
-
-#### GitやPython使える人
-
-Pythonの仮想環境・パッケージ管理ツールである[uv](https://github.com/astral-sh/uv)を使ってインストールすることをお勧めします。
+Pythonの仮想環境・パッケージ管理ツールである[uv](https://github.com/astral-sh/uv)を使ってインストールします。
 
 ```bash
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# uvのインストール（未導入の場合）
+# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# macOS/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+
 git clone https://github.com/litagin02/Style-Bert-VITS2.git
 cd Style-Bert-VITS2
 uv sync --group train                # 学習環境（推論のみの場合は --group infer）
-python initialize.py                  # 必要なモデルとデフォルトTTSモデルをダウンロード
+uv run python initialize.py          # 必要なモデルとデフォルトTTSモデルをダウンロード
 ```
 
 ### 音声合成
 
-音声合成エディターは`Editor.bat`をダブルクリックか、`python server_editor.py --inbrowser`すると起動します（`--device cpu`でCPUモードで起動）。画面内で各セリフごとに設定を変えて原稿を作ったり、保存や読み込みや辞書の編集等ができます。
+音声合成エディターは`uv run python server_editor.py --inbrowser`すると起動します（`--device cpu`でCPUモードで起動）。画面内で各セリフごとに設定を変えて原稿を作ったり、保存や読み込みや辞書の編集等ができます。
 インストール時にデフォルトのモデルがダウンロードされているので、学習していなくてもそれを使うことができます。
 
 エディター部分は[別リポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)に分かれています。
 
-バージョン2.2以前での音声合成WebUIは、`App.bat`をダブルクリックか、`python app.py`するとWebUIが起動します。または`Inference.bat`でも音声合成単独タブが開きます。
+音声合成WebUIは`uv run python app.py`で起動します。音声合成単独タブは`uv run python -m gradio_tabs.inference`でも開けます。
 
 音声合成に必要なモデルファイルたちの構造は以下の通りです（手動で配置する必要はありません）。
 ```
@@ -119,46 +106,46 @@ model_assets
 
 #### データセット作り
 
-- `App.bat`をダブルクリックか`python app.py`したところの「データセット作成」タブから、音声ファイルを適切な長さにスライスし、その後に文字の書き起こしを自動で行えます。または`Dataset.bat`をダブルクリックでもその単独タブが開きます。
+- `uv run python app.py`の「データセット作成」タブから、音声ファイルを適切な長さにスライスし、その後に文字の書き起こしを自動で行えます。単独タブは`uv run python -m gradio_tabs.dataset`でも開けます。
 - 指示に従った後、下の「学習」タブでそのまま学習を行うことができます。
 
 #### 学習WebUI
 
-- `App.bat`をダブルクリックか`python app.py`して開くWebUIの「学習」タブから指示に従ってください。または`Train.bat`をダブルクリックでもその単独タブが開きます。
+- `uv run python app.py`の「学習」タブから指示に従ってください。単独タブは`uv run python -m gradio_tabs.train`でも開けます。
 
 ### スタイルの生成
 
 - デフォルトでは、デフォルトスタイル「Neutral」の他、学習フォルダのフォルダ分けに応じたスタイルが生成されます。
 - それ以外の方法で手動でスタイルを作成したい人向けです。
-- `App.bat`をダブルクリックか`python app.py`して開くWebUIの「スタイル作成」タブから、音声ファイルを使ってスタイルを生成できます。または`StyleVectors.bat`をダブルクリックでもその単独タブが開きます。
+- `uv run python app.py`の「スタイル作成」タブから、音声ファイルを使ってスタイルを生成できます。単独タブは`uv run python -m gradio_tabs.style_vectors`でも開けます。
 - 学習とは独立しているので、学習中でもできるし、学習が終わっても何度もやりなおせます（前処理は終わらせている必要があります）。
 
 ### API Server
 
-構築した環境下で`python server_fastapi.py`するとAPIサーバーが起動します。
+`uv run python server_fastapi.py`でAPIサーバーが起動します。
 API仕様は起動後に`/docs`にて確認ください。
 
 - 入力文字数はデフォルトで100文字が上限となっています。これは`config.yml`の`server.limit`で変更できます。
 - デフォルトではCORS設定を全てのドメインで許可しています。できる限り、`config.yml`の`server.origins`の値を変更し、信頼できるドメインに制限ください(キーを消せばCORS設定を無効にできます)。
 
-また音声合成エディターのAPIサーバーは`python server_editor.py`で起動します。があまりまだ整備をしていません。[エディターのリポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)から必要な最低限のAPIしか現在は実装していません。
+また音声合成エディターのAPIサーバーは`uv run python server_editor.py`で起動します。があまりまだ整備をしていません。[エディターのリポジトリ](https://github.com/litagin02/Style-Bert-VITS2-Editor)から必要な最低限のAPIしか現在は実装していません。
 
 音声合成エディターのウェブデプロイについては[このDockerfile](Dockerfile.deploy)を参考にしてください。
 
 ### マージ
 
 2つのモデルを、「声質」「声の高さ」「感情表現」「テンポ」の4点で混ぜ合わせて、新しいモデルを作ったり、また「あるモデルに、別の2つのモデルの差分を足す」等の操作ができます。
-`App.bat`をダブルクリックか`python app.py`して開くWebUIの「マージ」タブから、2つのモデルを選択してマージすることができます。または`Merge.bat`をダブルクリックでもその単独タブが開きます。
+`uv run python app.py`の「マージ」タブから、2つのモデルを選択してマージすることができます。単独タブは`uv run python -m gradio_tabs.merge`でも開けます。
 
 ### ONNX変換
 
-タブの「ONNX変換」または `ConvertONNX.bat` から、学習済みsafetensorsファイルをONNX形式に変換することができます。これは外部ライブラリ等でONNX形式ファイルが必要な場合に使えます。例えば [Aivis Project](https://aivis-project.com/) では [AIVM Generator](https://aivm-generator.aivis-project.com/) を使って、safetensorsファイルとONNXファイルからAivis Speech用のモデルを作成できます。
+タブの「ONNX変換」（`uv run python -m gradio_tabs.convert_onnx`）から、学習済みsafetensorsファイルをONNX形式に変換することができます。これは外部ライブラリ等でONNX形式ファイルが必要な場合に使えます。例えば [Aivis Project](https://aivis-project.com/) では [AIVM Generator](https://aivm-generator.aivis-project.com/) を使って、safetensorsファイルとONNXファイルからAivis Speech用のモデルを作成できます。
 
 ### 自然性評価
 
 学習結果のうちどのステップ数がいいかの「一つの」指標として、[SpeechMOS](https://github.com/tarepan/SpeechMOS) を使うスクリプトを用意しています:
 ```bash
-python speech_mos.py -m <model_name>
+uv run python speech_mos.py -m <model_name>
 ```
 ステップごとの自然性評価が表示され、`mos_results`フォルダの`mos_{model_name}.csv`と`mos_{model_name}.png`に結果が保存される。読み上げさせたい文章を変えたかったら中のファイルを弄って各自調整してください。またあくまでアクセントや感情表現や抑揚を全く考えない基準での評価で、目安のひとつなので、実際に読み上げさせて選別するのが一番だと思います。
 

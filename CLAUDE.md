@@ -23,10 +23,10 @@ python initialize.py                  # BERTモデル・デフォルトTTSモデ
 
 ### 起動
 ```bash
-python app.py                        # WebUI (Gradio、6タブ構成)
-python app.py --device cpu           # CPUモード
-python server_fastapi.py             # FastAPI サーバー (port 5000)
-python server_editor.py --inbrowser  # エディターUI
+uv run python app.py                        # WebUI (Gradio、6タブ構成)
+uv run python app.py --device cpu           # CPUモード
+uv run python server_fastapi.py             # FastAPI サーバー (port 5000)
+uv run python server_editor.py --inbrowser  # エディターUI
 ```
 
 ### テスト
@@ -44,17 +44,17 @@ uv run black . && uv run isort --profile black .          # 自動修正
 
 ### 学習パイプライン (CLI)
 ```bash
-python slice.py --model_name <name>              # 音声スライス
-python transcribe.py --model_name <name>         # 書き起こし
-python preprocess_all.py -m <name> [--use_jp_extra]  # 前処理一括
-python train_ms.py                               # 通常モデル学習
-python train_ms_jp_extra.py                      # JP-Extraモデル学習
+uv run python slice.py --model_name <name>              # 音声スライス
+uv run python transcribe.py --model_name <name>         # 書き起こし
+uv run python preprocess_all.py -m <name> [--use_jp_extra]  # 前処理一括
+uv run python train_ms.py                               # 通常モデル学習
+uv run python train_ms_jp_extra.py                      # JP-Extraモデル学習
 ```
 
 ### その他
 ```bash
-python convert_onnx.py          # ONNX変換
-python speech_mos.py -m <name>  # 自然性評価 (SpeechMOS)
+uv run python convert_onnx.py          # ONNX変換
+uv run python speech_mos.py -m <name>  # 自然性評価 (SpeechMOS)
 ```
 
 ## アーキテクチャ

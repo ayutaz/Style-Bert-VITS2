@@ -100,9 +100,9 @@ examples = [
 initial_md = """
 - Ver 2.5で追加されたデフォルトの [`koharune-ami`（小春音アミ）モデル](https://huggingface.co/litagin/sbv2_koharune_ami) と[`amitaro`（あみたろ）モデル](https://huggingface.co/litagin/sbv2_amitaro) は、[あみたろの声素材工房](https://amitaro.net/)で公開されているコーパス音源・ライブ配信音声を利用して事前に許可を得て学習したモデルです。下記の**利用規約を必ず読んで**からご利用ください。
 
-- Ver 2.5のアップデート後に上記モデルをダウンロードするには、`Initialize.bat`をダブルクリックするか、手動でダウンロードして`model_assets`ディレクトリに配置してください。
+- Ver 2.5のアップデート後に上記モデルをダウンロードするには、`uv run python initialize.py`を実行するか、手動でダウンロードして`model_assets`ディレクトリに配置してください。
 
-- Ver 2.3で追加された**エディター版**のほうが実際に読み上げさせるには使いやすいかもしれません。`Editor.bat`か`python server_editor.py --inbrowser`で起動できます。
+- **エディター版**のほうが実際に読み上げさせるには使いやすいかもしれません。`uv run python server_editor.py --inbrowser`で起動できます。
 """
 
 terms_of_use_md = """
@@ -177,7 +177,7 @@ model_assets
 - `*.safetensors`：学習済みモデルファイル（1つ以上が必要、複数可）
 - `style_vectors.npy`：スタイルベクトルファイル
 
-上2つは`Train.bat`による学習で自動的に正しい位置に保存されます。`style_vectors.npy`は`Style.bat`を実行して指示に従って生成してください。
+上2つは学習で自動的に正しい位置に保存されます。`style_vectors.npy`は`uv run python -m gradio_tabs.style_vectors`を実行して指示に従って生成してください。
 """
 
 style_md = f"""
