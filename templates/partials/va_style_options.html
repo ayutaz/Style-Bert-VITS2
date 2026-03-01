@@ -1,34 +1,65 @@
-<!-- モードタブ -->
-<div class="mode-tabs">
-    <button type="button" class="mode-tab active" data-mode="diff_transfer" onclick="switchVaMode('diff_transfer')">差分転写</button>
-    <button type="button" class="mode-tab" data-mode="weighted_mean" onclick="switchVaMode('weighted_mean')">加重平均</button>
-    <button type="button" class="mode-tab" data-mode="scaling" onclick="switchVaMode('scaling')">スケーリング</button>
-    <button type="button" class="mode-tab" data-mode="custom" onclick="switchVaMode('custom')">カスタム式</button>
+<!-- モード選択: 2×2 カードグリッド -->
+<div class="va-mode-grid">
+    <div class="va-mode-card active" data-mode="diff_transfer" onclick="switchVaMode('diff_transfer')">
+        <div class="va-mode-formula">A + s(B &minus; C)</div>
+        <div class="va-mode-name">差分転写</div>
+        <div class="va-mode-desc">差分を転写</div>
+    </div>
+    <div class="va-mode-card" data-mode="weighted_mean" onclick="switchVaMode('weighted_mean')">
+        <div class="va-mode-formula">w&#x2081;A + w&#x2082;B + w&#x2083;C</div>
+        <div class="va-mode-name">加重平均</div>
+        <div class="va-mode-desc">重み付き混合</div>
+    </div>
+    <div class="va-mode-card" data-mode="scaling" onclick="switchVaMode('scaling')">
+        <div class="va-mode-formula">s &times; A</div>
+        <div class="va-mode-name">スケーリング</div>
+        <div class="va-mode-desc">強さを調整</div>
+    </div>
+    <div class="va-mode-card" data-mode="custom" onclick="switchVaMode('custom')">
+        <div class="va-mode-formula">f(x)</div>
+        <div class="va-mode-name">カスタム式</div>
+        <div class="va-mode-desc">四則演算で記述</div>
+    </div>
 </div>
 <input type="hidden" name="mode" id="va-mode" value="diff_transfer" data-va-param>
 
 <!-- 差分転写パネル -->
 <div class="mode-panel active" data-mode="diff_transfer">
-    <p class="mode-description">A + scale &times; (B &minus; C) : ベースAにターゲットBとソースCの差分を適用</p>
+    <div class="va-live-formula" id="va-dt-formula"></div>
     <div class="form-group">
         <label for="va-dt-base">ベース (A)</label>
-        <select name="dt_base" id="va-dt-base" data-va-param>
+        <select name="dt_base" id="va-dt-base" data-va-param
+                onchange="updateDtFormula()"
+                hx-post="/api/vector/compute-norm"
+                hx-trigger="change"
+                hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                hx-target="#va-norm-display">
             {% for s in styles %}
             <option value="{{ s }}">{{ s }}</option>
             {% endfor %}
         </select>
     </div>
     <div class="form-group">
-        <label for="va-dt-source">ソース (C)</label>
-        <select name="dt_source" id="va-dt-source" data-va-param>
+        <label for="va-dt-target">ターゲット (B) &mdash; 移動先</label>
+        <select name="dt_target" id="va-dt-target" data-va-param
+                onchange="updateDtFormula()"
+                hx-post="/api/vector/compute-norm"
+                hx-trigger="change"
+                hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                hx-target="#va-norm-display">
             {% for s in styles %}
             <option value="{{ s }}" {% if styles | length >= 2 and loop.index == 2 %}selected{% elif styles | length < 2 and loop.last %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
         </select>
     </div>
     <div class="form-group">
-        <label for="va-dt-target">ターゲット (B)</label>
-        <select name="dt_target" id="va-dt-target" data-va-param>
+        <label for="va-dt-source">ソース (C) &mdash; 移動元</label>
+        <select name="dt_source" id="va-dt-source" data-va-param
+                onchange="updateDtFormula()"
+                hx-post="/api/vector/compute-norm"
+                hx-trigger="change"
+                hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                hx-target="#va-norm-display">
             {% for s in styles %}
             <option value="{{ s }}" {% if styles | length >= 3 and loop.index == 3 %}selected{% elif styles | length < 3 and loop.last %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
@@ -38,7 +69,11 @@
         <label>スケール: <span id="va-dt-scale-display">1.00</span></label>
         <input type="range" name="dt_scale" id="va-dt-scale" data-va-param
                min="0" max="3" step="0.01" value="1.0"
-               oninput="document.getElementById('va-dt-scale-display').textContent = parseFloat(this.value).toFixed(2)">
+               oninput="document.getElementById('va-dt-scale-display').textContent = parseFloat(this.value).toFixed(2); updateDtFormula()"
+               hx-post="/api/vector/compute-norm"
+               hx-trigger="change"
+               hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+               hx-target="#va-norm-display">
         <div class="slider-labels">
             <span>0.0</span>
             <span>3.0</span>
@@ -48,59 +83,80 @@
 
 <!-- 加重平均パネル -->
 <div class="mode-panel" data-mode="weighted_mean" style="display:none">
-    <p class="mode-description">w&#x2081;&times;A + w&#x2082;&times;B + w&#x2083;&times;C : スタイルの重み付き平均</p>
-    <div class="weight-row">
-        <div class="form-group">
-            <label for="va-wm-style-a">スタイル A</label>
-            <select name="wm_style_a" id="va-wm-style-a" data-va-param>
+    <div class="va-weight-item">
+        <div class="va-weight-header">
+            <span class="va-weight-label">A</span>
+            <select name="wm_style_a" id="va-wm-style-a" data-va-param
+                    hx-post="/api/vector/compute-norm"
+                    hx-trigger="change"
+                    hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                    hx-target="#va-norm-display">
                 {% for s in styles %}
                 <option value="{{ s }}">{{ s }}</option>
                 {% endfor %}
             </select>
+            <span class="va-weight-value" id="va-wm-weight-a-display">1.00</span>
         </div>
-        <div class="slider-group">
-            <label>重み: <span id="va-wm-weight-a-display">1.00</span></label>
-            <input type="range" name="wm_weight_a" id="va-wm-weight-a" data-va-param
-                   min="-2" max="2" step="0.01" value="1.0"
-                   oninput="document.getElementById('va-wm-weight-a-display').textContent = parseFloat(this.value).toFixed(2)">
-        </div>
+        <input type="range" name="wm_weight_a" id="va-wm-weight-a" data-va-param
+               min="-2" max="2" step="0.01" value="1.0"
+               oninput="document.getElementById('va-wm-weight-a-display').textContent = parseFloat(this.value).toFixed(2)"
+               hx-post="/api/vector/compute-norm"
+               hx-trigger="change"
+               hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+               hx-target="#va-norm-display">
     </div>
-    <div class="weight-row">
-        <div class="form-group">
-            <label for="va-wm-style-b">スタイル B</label>
-            <select name="wm_style_b" id="va-wm-style-b" data-va-param>
+    <div class="va-weight-item">
+        <div class="va-weight-header">
+            <span class="va-weight-label">B</span>
+            <select name="wm_style_b" id="va-wm-style-b" data-va-param
+                    hx-post="/api/vector/compute-norm"
+                    hx-trigger="change"
+                    hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                    hx-target="#va-norm-display">
                 {% for s in styles %}
                 <option value="{{ s }}" {% if styles | length >= 2 and loop.index == 2 %}selected{% elif styles | length < 2 and loop.last %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
             </select>
+            <span class="va-weight-value" id="va-wm-weight-b-display">1.00</span>
         </div>
-        <div class="slider-group">
-            <label>重み: <span id="va-wm-weight-b-display">1.00</span></label>
-            <input type="range" name="wm_weight_b" id="va-wm-weight-b" data-va-param
-                   min="-2" max="2" step="0.01" value="1.0"
-                   oninput="document.getElementById('va-wm-weight-b-display').textContent = parseFloat(this.value).toFixed(2)">
-        </div>
+        <input type="range" name="wm_weight_b" id="va-wm-weight-b" data-va-param
+               min="-2" max="2" step="0.01" value="1.0"
+               oninput="document.getElementById('va-wm-weight-b-display').textContent = parseFloat(this.value).toFixed(2)"
+               hx-post="/api/vector/compute-norm"
+               hx-trigger="change"
+               hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+               hx-target="#va-norm-display">
     </div>
-    <div class="weight-row">
-        <div class="form-group">
-            <label for="va-wm-style-c">スタイル C（オプション）</label>
-            <select name="wm_style_c" id="va-wm-style-c" data-va-param>
+    <div class="va-weight-item">
+        <div class="va-weight-header">
+            <span class="va-weight-label">C</span>
+            <select name="wm_style_c" id="va-wm-style-c" data-va-param
+                    hx-post="/api/vector/compute-norm"
+                    hx-trigger="change"
+                    hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                    hx-target="#va-norm-display">
                 <option value="">(なし)</option>
                 {% for s in styles %}
                 <option value="{{ s }}">{{ s }}</option>
                 {% endfor %}
             </select>
+            <span class="va-weight-value" id="va-wm-weight-c-display">0.00</span>
         </div>
-        <div class="slider-group">
-            <label>重み: <span id="va-wm-weight-c-display">0.00</span></label>
-            <input type="range" name="wm_weight_c" id="va-wm-weight-c" data-va-param
-                   min="-2" max="2" step="0.01" value="0.0"
-                   oninput="document.getElementById('va-wm-weight-c-display').textContent = parseFloat(this.value).toFixed(2)">
-        </div>
+        <input type="range" name="wm_weight_c" id="va-wm-weight-c" data-va-param
+               min="-2" max="2" step="0.01" value="0.0"
+               oninput="document.getElementById('va-wm-weight-c-display').textContent = parseFloat(this.value).toFixed(2)"
+               hx-post="/api/vector/compute-norm"
+               hx-trigger="change"
+               hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+               hx-target="#va-norm-display">
     </div>
     <div class="form-group">
         <label>
-            <input type="checkbox" name="wm_normalize" id="va-wm-normalize" data-va-param checked>
+            <input type="checkbox" name="wm_normalize" id="va-wm-normalize" data-va-param checked
+                   hx-post="/api/vector/compute-norm"
+                   hx-trigger="change"
+                   hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                   hx-target="#va-norm-display">
             重みを正規化（合計=1.0）
         </label>
     </div>
@@ -108,10 +164,15 @@
 
 <!-- スケーリングパネル -->
 <div class="mode-panel" data-mode="scaling" style="display:none">
-    <p class="mode-description">scale &times; A : スタイルの強調・抑制</p>
+    <div class="va-live-formula" id="va-sc-formula"></div>
     <div class="form-group">
         <label for="va-sc-style">スタイル</label>
-        <select name="sc_style" id="va-sc-style" data-va-param>
+        <select name="sc_style" id="va-sc-style" data-va-param
+                onchange="updateScFormula()"
+                hx-post="/api/vector/compute-norm"
+                hx-trigger="change"
+                hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                hx-target="#va-norm-display">
             {% for s in styles %}
             <option value="{{ s }}">{{ s }}</option>
             {% endfor %}
@@ -121,7 +182,11 @@
         <label>スケール: <span id="va-sc-scale-display">1.00</span></label>
         <input type="range" name="sc_scale" id="va-sc-scale" data-va-param
                min="0" max="3" step="0.01" value="1.0"
-               oninput="document.getElementById('va-sc-scale-display').textContent = parseFloat(this.value).toFixed(2)">
+               oninput="document.getElementById('va-sc-scale-display').textContent = parseFloat(this.value).toFixed(2); updateScFormula()"
+               hx-post="/api/vector/compute-norm"
+               hx-trigger="change"
+               hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+               hx-target="#va-norm-display">
         <div class="slider-labels">
             <span>0.0</span>
             <span>3.0</span>
@@ -133,26 +198,138 @@
 <div class="mode-panel" data-mode="custom" style="display:none">
     <p class="mode-description">スタイル名と四則演算で自由に式を記述</p>
     <textarea name="expression" id="va-custom-expression" data-va-param
-              rows="2" placeholder="例: Happy - 0.3 * Neutral + 0.5 * Sad"></textarea>
+              rows="2" placeholder="例: Happy - 0.3 * Neutral + 0.5 * Sad"
+              hx-post="/api/vector/compute-norm"
+              hx-trigger="keyup changed delay:500ms"
+              hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+              hx-target="#va-norm-display"></textarea>
     <div class="formula-help">
         <p>演算子: <code>+</code> 加算, <code>-</code> 減算, <code>数値 * スタイル名</code> スカラー倍</p>
     </div>
     <div class="styles-list">
-        <span>利用可能なスタイル:</span>
-        {% for s in styles %}<span class="style-tag">{{ s }}</span>{% endfor %}
+        <span>利用可能なスタイル（クリックで挿入）:</span>
+        {% for s in styles %}<span class="va-style-tag-clickable" onclick="insertStyleName('{{ s }}')">{{ s }}</span>{% endfor %}
     </div>
 </div>
+
+<!-- 詳細設定（ノルムクリッピング） -->
+<details class="va-advanced-settings" open>
+    <summary class="va-advanced-summary">詳細設定（ノルムクリッピング）</summary>
+    <div class="va-advanced-content">
+        <div class="clip-settings">
+            <label>
+                <input type="checkbox" id="va-clip-enabled" name="clip_enabled" checked
+                       hx-post="/api/vector/compute-norm"
+                       hx-trigger="change"
+                       hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                       hx-target="#va-norm-display">
+                ノルムクリッピング有効（推奨）
+            </label>
+            <div class="slider-group">
+                <label>クリッピング係数: <span id="va-clip-factor-display">2.00</span></label>
+                <input type="range" id="va-clip-factor" name="clip_factor"
+                       min="1.0" max="5.0" step="0.1" value="2.0"
+                       oninput="document.getElementById('va-clip-factor-display').textContent = parseFloat(this.value).toFixed(2)"
+                       hx-post="/api/vector/compute-norm"
+                       hx-trigger="change"
+                       hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                       hx-target="#va-norm-display">
+            </div>
+        </div>
+        <div id="va-norm-display">
+            <span class="norm-indicator">ノルム比: -</span>
+        </div>
+        <button type="button" class="btn-secondary" style="margin-top: 12px;"
+                hx-post="/api/vector/visualize"
+                hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
+                hx-target="#vector-plot">
+            2D可視化
+        </button>
+        <div id="vector-plot"></div>
+    </div>
+</details>
 
 <script>
 function switchVaMode(mode) {
     document.getElementById('va-mode').value = mode;
-    document.querySelectorAll('.mode-tab').forEach(function(tab) {
-        tab.classList.toggle('active', tab.dataset.mode === mode);
+    document.querySelectorAll('.va-mode-card').forEach(function(card) {
+        card.classList.toggle('active', card.dataset.mode === mode);
     });
     document.querySelectorAll('.mode-panel').forEach(function(panel) {
         var show = panel.dataset.mode === mode;
         panel.style.display = show ? 'block' : 'none';
         panel.classList.toggle('active', show);
     });
+    // モード切替時にノルム自動更新
+    htmx.ajax('POST', '/api/vector/compute-norm', {
+        source: document.getElementById('va-mode'),
+        target: '#va-norm-display',
+        include: '#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor'
+    });
 }
+
+function updateDtFormula() {
+    var a = document.getElementById('va-dt-base');
+    var b = document.getElementById('va-dt-target');
+    var c = document.getElementById('va-dt-source');
+    var s = document.getElementById('va-dt-scale');
+    if (!a || !b || !c || !s) return;
+    var el = document.getElementById('va-dt-formula');
+    if (el) {
+        el.innerHTML =
+            '<span class="va-formula-highlight">' + escHtml(a.options[a.selectedIndex].text) + '</span>' +
+            ' + ' + parseFloat(s.value).toFixed(2) + ' \u00d7 (' +
+            '<span class="va-formula-highlight">' + escHtml(b.options[b.selectedIndex].text) + '</span>' +
+            ' \u2212 ' +
+            '<span class="va-formula-highlight">' + escHtml(c.options[c.selectedIndex].text) + '</span>' +
+            ')';
+    }
+}
+
+function updateScFormula() {
+    var style = document.getElementById('va-sc-style');
+    var scale = document.getElementById('va-sc-scale');
+    if (!style || !scale) return;
+    var el = document.getElementById('va-sc-formula');
+    if (el) {
+        el.innerHTML =
+            parseFloat(scale.value).toFixed(2) + ' \u00d7 ' +
+            '<span class="va-formula-highlight">' + escHtml(style.options[style.selectedIndex].text) + '</span>';
+    }
+}
+
+function insertStyleName(name) {
+    var ta = document.getElementById('va-custom-expression');
+    if (!ta) return;
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    var text = ta.value;
+    var before = text.substring(0, start);
+    // 先頭でなく、直前にスペースや演算子がない場合はスペースを追加
+    var needSpace = before.length > 0 && !/[\s+\-*(]$/.test(before);
+    var insert = (needSpace ? ' ' : '') + name;
+    ta.value = before + insert + text.substring(end);
+    ta.selectionStart = ta.selectionEnd = start + insert.length;
+    ta.focus();
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function escHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+// 初期化: ライブ数式を設定
+document.addEventListener('DOMContentLoaded', function() {
+    updateDtFormula();
+    updateScFormula();
+});
+// HTMX swap後の初期化（モデルロード時）
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target && e.detail.target.id === 'va-style-selectors') {
+        updateDtFormula();
+        updateScFormula();
+    }
+});
 </script>

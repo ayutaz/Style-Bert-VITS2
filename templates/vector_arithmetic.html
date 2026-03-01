@@ -76,34 +76,7 @@
             </div>
         </div>
 
-        <!-- セクション3: ノルム安全設定 -->
-        <div class="card">
-            <h2>ノルム安全設定</h2>
-            <div class="clip-settings">
-                <label>
-                    <input type="checkbox" id="va-clip-enabled" name="clip_enabled" checked>
-                    ノルムクリッピング有効（推奨）
-                </label>
-                <div class="slider-group">
-                    <label>クリッピング係数: <span id="va-clip-factor-display">2.00</span></label>
-                    <input type="range" id="va-clip-factor" name="clip_factor"
-                           min="1.0" max="5.0" step="0.1" value="2.0"
-                           oninput="document.getElementById('va-clip-factor-display').textContent = parseFloat(this.value).toFixed(2)">
-                </div>
-            </div>
-            <div id="va-norm-display">
-                <span class="norm-indicator">ノルム比: -</span>
-            </div>
-            <button type="button" class="btn-secondary" style="margin-top: 12px;"
-                    hx-post="/api/vector/visualize"
-                    hx-include="#va-mode, [data-va-param], #va-clip-enabled, #va-clip-factor"
-                    hx-target="#vector-plot">
-                2D可視化
-            </button>
-            <div id="vector-plot"></div>
-        </div>
-
-        <!-- セクション4: 音声合成 -->
+        <!-- セクション3: 音声合成 -->
         <div class="card">
             <h2>音声合成</h2>
             <textarea id="va-text-input" name="text" rows="3">こんにちは、今日はいい天気ですね。</textarea>
@@ -126,7 +99,7 @@
             <div id="va-audio-output"></div>
         </div>
 
-        <!-- セクション5: スタイル保存 -->
+        <!-- セクション4: スタイル保存 -->
         <div class="card">
             <h2>スタイル保存</h2>
             <input type="text" id="va-new-style-name" name="style_name" placeholder="例: Diff_HappySad">
