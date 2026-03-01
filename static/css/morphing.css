@@ -825,3 +825,64 @@ details[open] .guide-summary::before {
   font-size: 0.85rem;
   color: #86cecb;
 }
+
+.guide-content pre {
+  background-color: #111827;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  overflow-x: auto;
+}
+
+/* ========== Inference UI ========== */
+
+/* ---------- Checkbox Label ---------- */
+
+.inf-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.inf-checkbox-label input[type="checkbox"] {
+  accent-color: #86cecb;
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Advanced Settings (Inference) ---------- */
+
+.inf-advanced-settings {
+  margin-top: 16px;
+  border-top: 1px solid #374151;
+  padding-top: 12px;
+}
+
+/* ---------- Example Text Items ---------- */
+
+.inf-example-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inf-example-item {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.inf-example-item:hover {
+  background-color: #1a2332;
+  border-color: #86cecb;
+  color: #e2e8f0;
+}

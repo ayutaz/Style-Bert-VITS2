@@ -1,0 +1,220 @@
+<!-- テキスト入力 -->
+<div class="form-group">
+    <label for="inf-text">テキスト</label>
+    <textarea id="inf-text" name="text" rows="4">こんにちは、初めまして。あなたの名前はなんていうの？</textarea>
+</div>
+
+<!-- 基本設定 -->
+<div class="form-row">
+    <div class="form-group">
+        <label for="inf-language">言語</label>
+        <select id="inf-language" name="language">
+            <option value="JP" selected>JP</option>
+            <option value="EN">EN</option>
+            <option value="ZH">ZH</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="inf-speaker">話者</label>
+        <select id="inf-speaker" name="speaker">
+            {% for sp in speakers %}
+            <option value="{{ sp }}">{{ sp }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="inf-style">スタイル</label>
+        <select id="inf-style" name="style">
+            {% for s in styles %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- スタイルの強さ -->
+<div class="slider-group">
+    <label>スタイルの強さ: <span id="inf-style-weight-display">1.0</span></label>
+    <input type="range" id="inf-style-weight" name="style_weight"
+           min="0" max="20" step="0.1" value="1.0"
+           oninput="document.getElementById('inf-style-weight-display').textContent = parseFloat(this.value).toFixed(1)">
+    <div class="slider-labels">
+        <span>0</span>
+        <span>20</span>
+    </div>
+</div>
+
+<!-- 音声設定 -->
+<div class="form-row" style="margin-top: 16px;">
+    <div class="form-group">
+        <div class="slider-group">
+            <label>音高 (1以外は音質劣化): <span id="inf-pitch-display">1.00</span></label>
+            <input type="range" id="inf-pitch" name="pitch_scale"
+                   min="0.8" max="1.5" step="0.05" value="1.0"
+                   oninput="document.getElementById('inf-pitch-display').textContent = parseFloat(this.value).toFixed(2)">
+            <div class="slider-labels">
+                <span>0.8</span>
+                <span>1.5</span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="slider-group">
+            <label>抑揚 (1以外は音質劣化): <span id="inf-intonation-display">1.00</span></label>
+            <input type="range" id="inf-intonation" name="intonation_scale"
+                   min="0" max="2" step="0.1" value="1.0"
+                   oninput="document.getElementById('inf-intonation-display').textContent = parseFloat(this.value).toFixed(2)">
+            <div class="slider-labels">
+                <span>0</span>
+                <span>2.0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 改行分割 -->
+<div class="inf-line-split-group">
+    <label class="inf-checkbox-label">
+        <input type="checkbox" id="inf-line-split" name="line_split" checked>
+        改行で分けて生成
+    </label>
+    <div class="slider-group" style="margin-top: 8px;">
+        <label>改行ごとの無音 (秒): <span id="inf-split-interval-display">0.5</span></label>
+        <input type="range" id="inf-split-interval" name="split_interval"
+               min="0" max="2" step="0.1" value="0.5"
+               oninput="document.getElementById('inf-split-interval-display').textContent = parseFloat(this.value).toFixed(1)">
+        <div class="slider-labels">
+            <span>0</span>
+            <span>2.0</span>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細設定 -->
+<details class="inf-advanced-settings">
+    <summary class="va-advanced-summary">詳細設定</summary>
+    <div class="va-advanced-content">
+        <div class="form-row">
+            <div class="form-group">
+                <div class="slider-group">
+                    <label>SDP Ratio: <span id="inf-sdp-display">0.2</span></label>
+                    <input type="range" id="inf-sdp" name="sdp_ratio"
+                           min="0" max="1" step="0.1" value="0.2"
+                           oninput="document.getElementById('inf-sdp-display').textContent = parseFloat(this.value).toFixed(1)">
+                    <div class="slider-labels">
+                        <span>0</span>
+                        <span>1.0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="slider-group">
+                    <label>Noise: <span id="inf-noise-display">0.6</span></label>
+                    <input type="range" id="inf-noise" name="noise"
+                           min="0.1" max="2" step="0.1" value="0.6"
+                           oninput="document.getElementById('inf-noise-display').textContent = parseFloat(this.value).toFixed(1)">
+                    <div class="slider-labels">
+                        <span>0.1</span>
+                        <span>2.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <div class="slider-group">
+                    <label>Noise_W: <span id="inf-noisew-display">0.8</span></label>
+                    <input type="range" id="inf-noisew" name="noise_w"
+                           min="0.1" max="2" step="0.1" value="0.8"
+                           oninput="document.getElementById('inf-noisew-display').textContent = parseFloat(this.value).toFixed(1)">
+                    <div class="slider-labels">
+                        <span>0.1</span>
+                        <span>2.0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="slider-group">
+                    <label>Length: <span id="inf-length-display">1.0</span></label>
+                    <input type="range" id="inf-length" name="length"
+                           min="0.1" max="2" step="0.1" value="1.0"
+                           oninput="document.getElementById('inf-length-display').textContent = parseFloat(this.value).toFixed(1)">
+                    <div class="slider-labels">
+                        <span>0.1</span>
+                        <span>2.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</details>
+
+<!-- Assist Text -->
+<details class="inf-advanced-settings">
+    <summary class="va-advanced-summary">Assist Text</summary>
+    <div class="va-advanced-content">
+        <label class="inf-checkbox-label">
+            <input type="checkbox" id="inf-use-assist" name="use_assist_text">
+            Assist Textを使う
+        </label>
+        <div class="form-group" style="margin-top: 8px;">
+            <textarea id="inf-assist-text" name="assist_text" rows="2" placeholder="感情参照テキスト"></textarea>
+        </div>
+        <div class="slider-group">
+            <label>Assist Text Weight: <span id="inf-assist-weight-display">1.0</span></label>
+            <input type="range" id="inf-assist-weight" name="assist_text_weight"
+                   min="0" max="1" step="0.1" value="1.0"
+                   oninput="document.getElementById('inf-assist-weight-display').textContent = parseFloat(this.value).toFixed(1)">
+            <div class="slider-labels">
+                <span>0</span>
+                <span>1.0</span>
+            </div>
+        </div>
+    </div>
+</details>
+
+<!-- 合成ボタン + 出力 -->
+<div style="margin-top: 20px;">
+    <button class="btn-primary"
+            hx-post="/api/inference/synthesize"
+            hx-include="#inf-model-name, #inf-model-path, #inf-text, #inf-language, #inf-speaker, #inf-style, #inf-style-weight, #inf-pitch, #inf-intonation, #inf-line-split, #inf-split-interval, #inf-sdp, #inf-noise, #inf-noisew, #inf-length, #inf-use-assist, #inf-assist-text, #inf-assist-weight"
+            hx-target="#inf-audio-output"
+            hx-indicator="#inf-synth-indicator">
+        音声合成
+    </button>
+    <span id="inf-synth-indicator" class="htmx-indicator">処理中...</span>
+    <div id="inf-audio-output"></div>
+</div>
+
+<!-- テキスト例 -->
+<details class="inf-advanced-settings" style="margin-top: 16px;">
+    <summary class="va-advanced-summary">テキスト例</summary>
+    <div class="va-advanced-content">
+        <div class="inf-example-list">
+            <div class="inf-example-item" data-text="こんにちは、初めまして。あなたの名前はなんていうの？"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                こんにちは、初めまして。あなたの名前はなんていうの？
+            </div>
+            <div class="inf-example-item" data-text="今日はとてもいい天気ですね。お散歩に行きませんか？"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                今日はとてもいい天気ですね。お散歩に行きませんか？
+            </div>
+            <div class="inf-example-item" data-text="ええっ！？本当に！？信じられない！"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                ええっ！？本当に！？信じられない！
+            </div>
+            <div class="inf-example-item" data-text="あの日のことは、今でも忘れられません。"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                あの日のことは、今でも忘れられません。
+            </div>
+            <div class="inf-example-item" data-text="それは素晴らしいアイデアですね！ぜひやってみましょう。"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                それは素晴らしいアイデアですね！ぜひやってみましょう。
+            </div>
+            <div class="inf-example-item" data-text="申し訳ございません、少々お待ちいただけますでしょうか。"
+                 onclick="document.getElementById('inf-text').value = this.dataset.text">
+                申し訳ございません、少々お待ちいただけますでしょうか。
+            </div>
+        </div>
+    </div>
+</details>

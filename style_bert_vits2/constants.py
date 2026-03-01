@@ -48,8 +48,3 @@ DEFAULT_LINE_SPLIT = True
 DEFAULT_SPLIT_INTERVAL = 0.5
 DEFAULT_ASSIST_TEXT_WEIGHT = 0.7
 DEFAULT_ASSIST_TEXT_WEIGHT = 1.0
-
-# Gradio のテーマ
-## Built-in theme: "default", "base", "monochrome", "soft", "glass"
-## See https://huggingface.co/spaces/gradio/theme-gallery for more themes
-GRADIO_THEME = "NoCrypt/miku"

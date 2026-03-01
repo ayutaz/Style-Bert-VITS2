@@ -24,10 +24,9 @@ python initialize.py                  # BERTモデル・デフォルトTTSモデ
 
 ### 起動
 ```bash
-uv run python app.py                        # WebUI (Gradio + HTMX)
+uv run python app.py                        # WebUI (FastAPI + HTMX)
 uv run python app.py --device cpu           # CPUモード
 ```
-注: `--share` オプション使用時はHTMX UIは利用不可（Gradioトンネルモード）
 
 ### テスト
 ```bash
@@ -88,13 +87,13 @@ uv run ruff check --fix . && uv run ruff format .         # 自動修正
   → 音声波形出力
 ```
 
-### WebUI: `gradio_tabs/`
+### HTMX UI（全画面共通）
 
-`app.py` がGradioアプリのエントリポイント。
-- `inference.py`: 音声合成
+`app.py` がFastAPIアプリのエントリポイント。全UIはHTMXベースで統一。
 
-### HTMX UI
-
+- **`inference_app.py`** — FastAPI APIRouterで実装された推論UIバックエンド
+  - `/inference`: メインページ（HTMXベース）
+  - `/api/inference/*`: モデル選択・ロード、音声合成、モデル一覧更新のAPIエンドポイント
 - **`morphing_app.py`** — FastAPI APIRouterで実装されたモーフィングUIバックエンド
   - `/morphing`: メインページ（HTMXベース）
   - `/api/morphing/*`: モデル選択、スタイル補間、音声合成、スタイル保存のAPIエンドポイント
@@ -102,17 +101,17 @@ uv run ruff check --fix . && uv run ruff format .         # 自動修正
   - `/vector-arithmetic`: メインページ（HTMXベース）
   - `/api/vector/*`: モデル選択、ベクトル演算（差分転写・加重平均・スケーリング・カスタム式）、音声合成、スタイル保存のAPIエンドポイント
 - **`templates/`** — Jinja2テンプレート
+  - `inference.html`: 推論UIメインページ
   - `morphing.html`: モーフィングUIメインページ
   - `vector_arithmetic.html`: ベクトル演算UIメインページ
+  - `partials/inference_options.html`: 推論用パラメータ設定フラグメント
   - `partials/style_options.html`: モーフィング用スタイル選択フラグメント
   - `partials/va_style_options.html`: ベクトル演算用モード別スタイル選択フラグメント
   - `partials/audio_player.html`: 音声プレーヤーフラグメント
   - `partials/norm_indicator.html`: ノルム安全インジケータ
   - `partials/style_plot.html`: PCA 2Dスタイルプロット (SVG)
 - **`static/css/morphing.css`** — HTMX UI共通ダークテーマスタイルシート
-- **`app.py`** — FastAPI + Gradio mount パターンで統合
-  - 通常モード: FastAPIがメインアプリ、Gradioを`/`にマウント、HTMX UIを`/morphing`と`/vector-arithmetic`で提供
-  - `--share`モード: Gradioのトンネル機能を使用（HTMX UIは利用不可）
+- **`app.py`** — FastAPIアプリ。`/` は `/inference` にリダイレクト
 
 ### 設定ファイル
 

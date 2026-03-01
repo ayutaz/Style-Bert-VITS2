@@ -77,7 +77,6 @@ cu124 = [
 
 # WebUI/APIサーバー依存
 webui = [
-    "gradio>=4.32",
     "GPUtil",
     "jinja2",
     "psutil",
