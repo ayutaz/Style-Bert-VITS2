@@ -73,6 +73,7 @@ cu124 = [
     "accelerate",
     "torch>=2.4",
     "torchaudio>=2.4",
+    "triton-windows<3.3; sys_platform == 'win32'",
 ]
 
 # WebUI/APIサーバー依存

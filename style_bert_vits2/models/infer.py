@@ -1,4 +1,3 @@
-import sys
 from typing import Any, cast
 
 import torch
@@ -98,14 +97,14 @@ def get_net_g(
     # 推論高速化: weight norm を除去してオーバーヘッドを削減
     net_g.dec.remove_weight_norm()
 
-    # CUDA + Linux 環境では torch.compile で推論を高速化
-    # Windows では Triton が利用できないためスキップ
-    if device.startswith("cuda") and sys.platform != "win32":
+    # CUDA 環境では torch.compile で推論を高速化
+    # Windows では triton-windows パッケージが必要
+    if device.startswith("cuda"):
         try:
-            net_g.dec = torch.compile(net_g.dec, mode="reduce-overhead")
-            net_g.enc_p = torch.compile(net_g.enc_p, mode="reduce-overhead")
-            net_g.flow = torch.compile(net_g.flow, mode="reduce-overhead")
-            net_g.dp = torch.compile(net_g.dp, mode="reduce-overhead")
+            net_g.dec = torch.compile(net_g.dec, mode="default")
+            net_g.enc_p = torch.compile(net_g.enc_p, mode="default")
+            net_g.flow = torch.compile(net_g.flow, mode="default")
+            net_g.dp = torch.compile(net_g.dp, mode="default")
         except Exception:
             pass  # torch.compile 未対応環境ではスキップ
 

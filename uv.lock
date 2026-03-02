@@ -2963,6 +2963,7 @@ cu124 = [
     { name = "accelerate" },
     { name = "torch" },
     { name = "torchaudio" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'" },
 ]
 dev = [
     { name = "accelerate" },
@@ -2981,6 +2982,7 @@ dev = [
     { name = "scipy" },
     { name = "torch" },
     { name = "torchaudio" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'" },
     { name = "umap-learn" },
 ]
 infer = [
@@ -2991,6 +2993,7 @@ infer = [
     { name = "pyannote-audio" },
     { name = "torch" },
     { name = "torchaudio" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'" },
     { name = "umap-learn" },
 ]
 onnx = [
@@ -3043,6 +3046,7 @@ cu124 = [
     { name = "accelerate" },
     { name = "torch", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
     { name = "torchaudio", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'", specifier = "<3.3" },
 ]
 dev = [
     { name = "accelerate" },
@@ -3061,6 +3065,7 @@ dev = [
     { name = "scipy" },
     { name = "torch", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
     { name = "torchaudio", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'", specifier = "<3.3" },
     { name = "umap-learn" },
 ]
 infer = [
@@ -3071,6 +3076,7 @@ infer = [
     { name = "pyannote-audio", specifier = ">=3.1.0" },
     { name = "torch", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
     { name = "torchaudio", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cu124" },
+    { name = "triton-windows", marker = "sys_platform == 'win32'", specifier = "<3.3" },
     { name = "umap-learn" },
 ]
 onnx = [
@@ -3324,6 +3330,15 @@ source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/06/00/59500052cb1cf8cf5316be93598946bc451f14072c6ff256904428eaf03c/triton-3.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8d9b215efc1c26fa7eefb9a157915c92d52e000d2bf83e5f69704047e63f125c", size = 253159365, upload-time = "2025-01-22T19:13:24.648Z" },
     { url = "https://files.pythonhosted.org/packages/c7/30/37a3384d1e2e9320331baca41e835e90a3767303642c7a80d4510152cbcf/triton-3.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e5dfa23ba84541d7c0a531dfce76d8bcd19159d50a4a8b14ad01e91734a5c1b0", size = 253154278, upload-time = "2025-01-22T19:13:54.221Z" },
+]
+
+[[package]]
+name = "triton-windows"
+version = "3.2.0.post21"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/96/7a9dd9d1e891b41e3469bff13ab7d4a2eb4ff4d891097a5a0e299fc7946b/triton_windows-3.2.0.post21-cp312-cp312-win_amd64.whl", hash = "sha256:f0294d4f85e98e735942d4db0771c4f05d7b13a481c99b520f1d9701f3e83966", size = 39710794, upload-time = "2025-10-15T08:45:27.45Z" },
+    { url = "https://files.pythonhosted.org/packages/76/59/dbddd9a7ed29638e283b2cffe79c9c67b288e03ee3447ff6b3b2d5c37a79/triton_windows-3.2.0.post21-cp313-cp313-win_amd64.whl", hash = "sha256:3a17037a583733ad476fa382143342c810f4c71b622734a3a714544303979146", size = 39711275, upload-time = "2025-10-15T08:46:06.047Z" },
 ]
 
 [[package]]
