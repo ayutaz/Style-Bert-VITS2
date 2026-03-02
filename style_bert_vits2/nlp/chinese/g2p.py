@@ -8,6 +8,10 @@ from style_bert_vits2.nlp.chinese.tone_sandhi import ToneSandhi
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
 
+# ToneSandhi のシングルトンインスタンス（毎回生成するコストを回避）
+_tone_sandhi = ToneSandhi()
+
+
 with open(Path(__file__).parent / "opencpop-strict.txt", encoding="utf-8") as f:
     __PINYIN_TO_SYMBOL_MAP = {
         line.split("\t")[0]: line.strip().split("\t")[1] for line in f.readlines()
@@ -30,7 +34,7 @@ def __g2p(segments: list[str]) -> tuple[list[str], list[int], list[int]]:
     phones_list = []
     tones_list = []
     word2ph = []
-    tone_modifier = ToneSandhi()
+    tone_modifier = _tone_sandhi
     for seg in segments:
         # Replace all English words in the sentence
         seg = re.sub("[a-zA-Z]+", "", seg)

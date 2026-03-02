@@ -19,47 +19,53 @@ def normalize_text(text: str) -> str:
     return text
 
 
+__REPLACE_MAP = {
+    "：": ",",
+    "；": ",",
+    "，": ",",
+    "。": ".",
+    "！": "!",
+    "？": "?",
+    "\n": ".",
+    "．": ".",
+    "…": "...",
+    "···": "...",
+    "・・・": "...",
+    "·": ",",
+    "・": ",",
+    "、": ",",
+    "$": ".",
+    "\u201c": "'",
+    "\u201d": "'",
+    '"': "'",
+    "\u2018": "'",
+    "\u2019": "'",
+    "（": "'",
+    "）": "'",
+    "(": "'",
+    ")": "'",
+    "《": "'",
+    "》": "'",
+    "【": "'",
+    "】": "'",
+    "[": "'",
+    "]": "'",
+    "—": "-",
+    "−": "-",
+    "～": "-",
+    "~": "-",
+    "「": "'",
+    "」": "'",
+}
+__REPLACE_PUNCTUATION_PATTERN = re.compile(
+    "|".join(re.escape(p) for p in __REPLACE_MAP)
+)
+
+
 def replace_punctuation(text: str) -> str:
-    REPLACE_MAP = {
-        "：": ",",
-        "；": ",",
-        "，": ",",
-        "。": ".",
-        "！": "!",
-        "？": "?",
-        "\n": ".",
-        "．": ".",
-        "…": "...",
-        "···": "...",
-        "・・・": "...",
-        "·": ",",
-        "・": ",",
-        "、": ",",
-        "$": ".",
-        "“": "'",
-        "”": "'",
-        '"': "'",
-        "‘": "'",
-        "’": "'",
-        "（": "'",
-        "）": "'",
-        "(": "'",
-        ")": "'",
-        "《": "'",
-        "》": "'",
-        "【": "'",
-        "】": "'",
-        "[": "'",
-        "]": "'",
-        "—": "-",
-        "−": "-",
-        "～": "-",
-        "~": "-",
-        "「": "'",
-        "」": "'",
-    }
-    pattern = re.compile("|".join(re.escape(p) for p in REPLACE_MAP))
-    replaced_text = pattern.sub(lambda x: REPLACE_MAP[x.group()], text)
+    replaced_text = __REPLACE_PUNCTUATION_PATTERN.sub(
+        lambda x: __REPLACE_MAP[x.group()], text
+    )
     # replaced_text = re.sub(
     #     r"[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\u3005"
     #     + "".join(punctuation)

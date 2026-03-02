@@ -15,6 +15,10 @@ from style_bert_vits2.utils import get_onnx_device_options
 if TYPE_CHECKING:
     import torch
 
+# BERT 特徴量キャッシュ (CPU 上に保存して VRAM を節約)
+_bert_cache: dict[tuple, torch.Tensor] = {}
+_BERT_CACHE_MAX_SIZE = 32
+
 
 def extract_bert_feature(
     text: str,
@@ -39,44 +43,66 @@ def extract_bert_feature(
 
     import torch
 
+    # キャッシュヒットチェック
+    cache_key = (text, tuple(word2ph), str(assist_text), str(assist_text_weight))
+    if cache_key in _bert_cache:
+        return _bert_cache[cache_key].to(device)
+
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
     model = bert_models.load_model(Languages.EN, device_map=device)
     bert_models.transfer_model(Languages.EN, device)
 
     style_res_mean = None
-    with torch.no_grad():
+    with torch.inference_mode():
         tokenizer = bert_models.load_tokenizer(Languages.EN)
         inputs = tokenizer(text, return_tensors="pt")
         for i in inputs:
             inputs[i] = inputs[i].to(device)  # type: ignore
-        res = model(**inputs, output_hidden_states=True)
-        res = torch.cat(res["hidden_states"][-3:-2], -1)[0].cpu()
+        device_type = "cuda" if "cuda" in str(device) else "cpu"
+        with torch.autocast(
+            device_type=device_type,
+            dtype=torch.float16,
+            enabled=(device_type == "cuda"),
+        ):
+            res = model(**inputs, output_hidden_states=True)
+        res = torch.cat(res["hidden_states"][-3:-2], -1)[0]
         if assist_text:
             style_inputs = tokenizer(assist_text, return_tensors="pt")
             for i in style_inputs:
                 style_inputs[i] = style_inputs[i].to(device)  # type: ignore
-            style_res = model(**style_inputs, output_hidden_states=True)
-            style_res = torch.cat(style_res["hidden_states"][-3:-2], -1)[0].cpu()
+            with torch.autocast(
+                device_type=device_type,
+                dtype=torch.float16,
+                enabled=(device_type == "cuda"),
+            ):
+                style_res = model(**style_inputs, output_hidden_states=True)
+            style_res = torch.cat(style_res["hidden_states"][-3:-2], -1)[0]
             style_res_mean = style_res.mean(0)
 
     assert len(word2ph) == res.shape[0], (text, res.shape[0], len(word2ph))
     word2phone = word2ph
-    phone_level_feature = []
-    for i in range(len(word2phone)):
-        if assist_text:
-            assert style_res_mean is not None
-            repeat_feature = (
-                res[i].repeat(word2phone[i], 1) * (1 - assist_text_weight)
-                + style_res_mean.repeat(word2phone[i], 1) * assist_text_weight
-            )
-        else:
-            repeat_feature = res[i].repeat(word2phone[i], 1)
-        phone_level_feature.append(repeat_feature)
+    if assist_text:
+        assert style_res_mean is not None
+        phone_level_feature = torch.repeat_interleave(
+            res * (1 - assist_text_weight)
+            + style_res_mean.unsqueeze(0) * assist_text_weight,
+            torch.tensor(word2phone, device=res.device),
+            dim=0,
+        )
+    else:
+        phone_level_feature = torch.repeat_interleave(
+            res, torch.tensor(word2phone, device=res.device), dim=0
+        )
 
-    phone_level_feature = torch.cat(phone_level_feature, dim=0)
+    result = phone_level_feature.T
 
-    return phone_level_feature.T
+    # キャッシュに保存 (CPU 上に保存して VRAM を節約)
+    if len(_bert_cache) >= _BERT_CACHE_MAX_SIZE:
+        _bert_cache.pop(next(iter(_bert_cache)))
+    _bert_cache[cache_key] = result.cpu()
+
+    return result
 
 
 def extract_bert_feature_onnx(
@@ -155,18 +181,15 @@ def extract_bert_feature_onnx(
 
     assert len(word2ph) == res.shape[0], (text, res.shape[0], len(word2ph))
     word2phone = word2ph
-    phone_level_feature = []
-    for i in range(len(word2phone)):
-        if assist_text:
-            assert style_res_mean is not None
-            repeat_feature = (
-                np.tile(res[i], (word2phone[i], 1)) * (1 - assist_text_weight)
-                + np.tile(style_res_mean, (word2phone[i], 1)) * assist_text_weight
-            )
-        else:
-            repeat_feature = np.tile(res[i], (word2phone[i], 1))
-        phone_level_feature.append(repeat_feature)
-
-    phone_level_feature = np.concatenate(phone_level_feature, axis=0)
+    if assist_text:
+        assert style_res_mean is not None
+        phone_level_feature = np.repeat(
+            res * (1 - assist_text_weight)
+            + style_res_mean[np.newaxis, :] * assist_text_weight,
+            word2phone,
+            axis=0,
+        )
+    else:
+        phone_level_feature = np.repeat(res, word2phone, axis=0)
 
     return phone_level_feature.T

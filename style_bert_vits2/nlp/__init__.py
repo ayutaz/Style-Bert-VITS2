@@ -22,6 +22,13 @@ if TYPE_CHECKING:
 __symbol_to_id = {s: i for i, s in enumerate(SYMBOLS)}
 
 
+# clean_text() の結果キャッシュ
+# キー: (text, language, use_jp_extra) のタプル
+# 値: (norm_text, phones_tuple, tones_tuple, word2ph_tuple)
+_clean_text_cache: dict[tuple, tuple] = {}
+_CLEAN_TEXT_CACHE_MAX_SIZE = 128
+
+
 def extract_bert_feature(
     text: str,
     word2ph: list[int],
@@ -117,6 +124,13 @@ def clean_text(
         tuple[str, list[str], list[int], list[int]]: クリーニングされたテキストと、音素・アクセント・元のテキストの各文字に音素が何個割り当てられるかのリスト
     """
 
+    # キャッシュチェック
+    cache_key = (text, language, use_jp_extra)
+    if cache_key in _clean_text_cache:
+        cached = _clean_text_cache[cache_key]
+        # キャッシュされたタプルをリストに変換して返す（呼び出し元での変更から保護）
+        return cached[0], list(cached[1]), list(cached[2]), list(cached[3])
+
     # Changed to import inside if condition to avoid unnecessary import
     if language == Languages.JP:
         from style_bert_vits2.nlp.japanese.g2p import g2p
@@ -138,6 +152,17 @@ def clean_text(
         phones, tones, word2ph = g2p(norm_text)
     else:
         raise ValueError(f"Language {language} not supported")
+
+    # キャッシュ保存（リストをタプルに変換して不変にする）
+    if len(_clean_text_cache) >= _CLEAN_TEXT_CACHE_MAX_SIZE:
+        # 最も古いエントリを削除（FIFO）
+        _clean_text_cache.pop(next(iter(_clean_text_cache)))
+    _clean_text_cache[cache_key] = (
+        norm_text,
+        tuple(phones),
+        tuple(tones),
+        tuple(word2ph),
+    )
 
     return norm_text, phones, tones, word2ph
 

@@ -84,7 +84,6 @@ def get_net_g(
             gin_channels=hps.model.gin_channels,
             slm=hps.model.slm,
         ).to(device)
-    net_g.state_dict()
     _ = net_g.eval()
     if model_path.endswith(".pth") or model_path.endswith(".pt"):
         _ = utils.checkpoints.load_checkpoint(
@@ -94,6 +93,20 @@ def get_net_g(
         _ = utils.safetensors.load_safetensors(model_path, net_g, True, device=device)
     else:
         raise ValueError(f"Unknown model format: {model_path}")
+
+    # 推論高速化: weight norm を除去してオーバーヘッドを削減
+    net_g.dec.remove_weight_norm()
+
+    # CUDA 環境では torch.compile で推論を高速化
+    if device.startswith("cuda"):
+        try:
+            net_g.dec = torch.compile(net_g.dec, mode="reduce-overhead")
+            net_g.enc_p = torch.compile(net_g.enc_p, mode="reduce-overhead")
+            net_g.flow = torch.compile(net_g.flow, mode="reduce-overhead")
+            net_g.dp = torch.compile(net_g.dp, mode="reduce-overhead")
+        except Exception:
+            pass  # torch.compile 未対応環境ではスキップ
+
     return net_g
 
 
@@ -141,15 +154,15 @@ def get_text(
 
     if language_str == Languages.ZH:
         bert = bert_ori
-        ja_bert = torch.zeros(1024, len(phone))
-        en_bert = torch.zeros(1024, len(phone))
+        ja_bert = torch.zeros(1024, len(phone), device=device)
+        en_bert = torch.zeros(1024, len(phone), device=device)
     elif language_str == Languages.JP:
-        bert = torch.zeros(1024, len(phone))
+        bert = torch.zeros(1024, len(phone), device=device)
         ja_bert = bert_ori
-        en_bert = torch.zeros(1024, len(phone))
+        en_bert = torch.zeros(1024, len(phone), device=device)
     elif language_str == Languages.EN:
-        bert = torch.zeros(1024, len(phone))
-        ja_bert = torch.zeros(1024, len(phone))
+        bert = torch.zeros(1024, len(phone), device=device)
+        ja_bert = torch.zeros(1024, len(phone), device=device)
         en_bert = bert_ori
     else:
         raise ValueError("language_str should be ZH, JP or EN")
@@ -209,7 +222,15 @@ def infer(
         ja_bert = ja_bert[:, :-2]
         en_bert = en_bert[:, :-2]
 
-    with torch.no_grad():
+    device_type = "cuda" if device.startswith("cuda") else "cpu"
+    use_amp = device_type == "cuda"
+    amp_dtype = (
+        torch.bfloat16
+        if (use_amp and torch.cuda.is_bf16_supported())
+        else torch.float16
+    )
+
+    with torch.inference_mode():
         x_tst = phones.to(device).unsqueeze(0)
         tones = tones.to(device).unsqueeze(0)
         lang_ids = lang_ids.to(device).unsqueeze(0)
@@ -221,36 +242,37 @@ def infer(
         del phones
         sid_tensor = torch.LongTensor([sid]).to(device)
 
-        if is_jp_extra:
-            output = cast(SynthesizerTrnJPExtra, net_g).infer(
-                x_tst,
-                x_tst_lengths,
-                sid_tensor,
-                tones,
-                lang_ids,
-                ja_bert,
-                style_vec=style_vec_tensor,
-                length_scale=length_scale,
-                sdp_ratio=sdp_ratio,
-                noise_scale=noise_scale,
-                noise_scale_w=noise_scale_w,
-            )
-        else:
-            output = cast(SynthesizerTrn, net_g).infer(
-                x_tst,
-                x_tst_lengths,
-                sid_tensor,
-                tones,
-                lang_ids,
-                bert,
-                ja_bert,
-                en_bert,
-                style_vec=style_vec_tensor,
-                length_scale=length_scale,
-                sdp_ratio=sdp_ratio,
-                noise_scale=noise_scale,
-                noise_scale_w=noise_scale_w,
-            )
+        with torch.autocast(device_type=device_type, dtype=amp_dtype, enabled=use_amp):
+            if is_jp_extra:
+                output = cast(SynthesizerTrnJPExtra, net_g).infer(
+                    x_tst,
+                    x_tst_lengths,
+                    sid_tensor,
+                    tones,
+                    lang_ids,
+                    ja_bert,
+                    style_vec=style_vec_tensor,
+                    length_scale=length_scale,
+                    sdp_ratio=sdp_ratio,
+                    noise_scale=noise_scale,
+                    noise_scale_w=noise_scale_w,
+                )
+            else:
+                output = cast(SynthesizerTrn, net_g).infer(
+                    x_tst,
+                    x_tst_lengths,
+                    sid_tensor,
+                    tones,
+                    lang_ids,
+                    bert,
+                    ja_bert,
+                    en_bert,
+                    style_vec=style_vec_tensor,
+                    length_scale=length_scale,
+                    sdp_ratio=sdp_ratio,
+                    noise_scale=noise_scale,
+                    noise_scale_w=noise_scale_w,
+                )
 
         audio = output[0][0, 0].data.cpu().float().numpy()
 
@@ -265,7 +287,5 @@ def infer(
             en_bert,
             style_vec,
         )  # , emo
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
 
         return audio

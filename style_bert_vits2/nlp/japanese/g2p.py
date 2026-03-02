@@ -10,6 +10,24 @@ from style_bert_vits2.nlp.japanese.normalizer import replace_punctuation
 from style_bert_vits2.nlp.symbols import PUNCTUATIONS
 
 
+# run_frontend() の1エントリキャッシュ
+# g2p() 内で text_to_sep_kata() と __pyopenjtalk_g2p_prosody() が同一テキストで
+# run_frontend() を呼ぶため、2回目の呼び出しをキャッシュで回避する
+_last_run_frontend_input: str | None = None
+_last_run_frontend_result: list | None = None
+
+
+def _cached_run_frontend(text: str) -> list:
+    """run_frontend() の1エントリキャッシュ版。同一テキストの連続呼び出しを最適化する。"""
+    global _last_run_frontend_input, _last_run_frontend_result
+    if text == _last_run_frontend_input and _last_run_frontend_result is not None:
+        return _last_run_frontend_result
+    result = pyopenjtalk.run_frontend(text)
+    _last_run_frontend_input = text
+    _last_run_frontend_result = result
+    return result
+
+
 def g2p(
     norm_text: str, use_jp_extra: bool = True, raise_yomi_error: bool = False
 ) -> tuple[list[str], list[int], list[int]]:
@@ -110,8 +128,8 @@ def text_to_sep_kata(
         tuple[list[str], list[str]]: 分割された単語リストと、その読み（カタカナ or 記号1文字）のリスト
     """
 
-    # parsed: OpenJTalkの解析結果
-    parsed = pyopenjtalk.run_frontend(norm_text)
+    # parsed: OpenJTalkの解析結果（キャッシュ版を使用）
+    parsed = _cached_run_frontend(norm_text)
     sep_text: list[str] = []
     sep_kata: list[str] = []
 
@@ -472,7 +490,7 @@ def __pyopenjtalk_g2p_prosody(
             return -50
         return int(match.group(1))
 
-    labels = pyopenjtalk.make_label(pyopenjtalk.run_frontend(text))
+    labels = pyopenjtalk.make_label(_cached_run_frontend(text))
     N = len(labels)
 
     phones = []

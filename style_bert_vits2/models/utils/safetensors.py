@@ -1,9 +1,7 @@
 from pathlib import Path
-from typing import Any
 
 import torch
-from safetensors import safe_open
-from safetensors.torch import save_file
+from safetensors.torch import load_file, save_file
 
 from style_bert_vits2.logging import logger
 
@@ -26,13 +24,10 @@ def load_safetensors(
         tuple[torch.nn.Module, Optional[int]]: 読み込まれたモデルとイテレーション回数（存在する場合）
     """
 
-    tensors: dict[str, Any] = {}
     iteration: int | None = None
-    with safe_open(str(checkpoint_path), framework="pt", device=device) as f:  # type: ignore
-        for key in f.keys():
-            if key == "iteration":
-                iteration = f.get_tensor(key).item()
-            tensors[key] = f.get_tensor(key)
+    tensors = load_file(str(checkpoint_path), device=device)  # type: ignore
+    if "iteration" in tensors:
+        iteration = tensors["iteration"].item()
     if hasattr(model, "module"):
         result = model.module.load_state_dict(tensors, strict=False)
     else:
