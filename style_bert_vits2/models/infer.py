@@ -19,6 +19,65 @@ from style_bert_vits2.nlp import (
 from style_bert_vits2.nlp.symbols import SYMBOLS
 
 
+def _warmup_compile(
+    net_g: SynthesizerTrn | SynthesizerTrnJPExtra,
+    device: str,
+    is_jp_extra: bool,
+) -> None:
+    """ダミー推論で torch.compile のコンパイルをトリガーする。
+
+    異なるシーケンス長で2回実行し、動的シェイプ最適化を有効化する。
+    モデルロード時に実行することで、初回推論時の長時間待機を回避。
+    """
+    import time
+
+    amp_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+    for i, seq_len in enumerate([10, 30]):
+        logger.info(f"torch.compile warmup ({i + 1}/2): seq_len={seq_len}...")
+        start = time.time()
+        with torch.inference_mode():
+            x = torch.randint(0, 10, (1, seq_len), device=device)
+            x_lengths = torch.LongTensor([seq_len]).to(device)
+            sid = torch.LongTensor([0]).to(device)
+            tone = torch.zeros(1, seq_len, dtype=torch.long, device=device)
+            language = torch.zeros(1, seq_len, dtype=torch.long, device=device)
+            style_vec = torch.zeros(1, 256, device=device)
+
+            with torch.autocast(device_type="cuda", dtype=amp_dtype):
+                if is_jp_extra:
+                    bert = torch.zeros(1, 1024, seq_len, device=device)
+                    net_g.infer(
+                        x,
+                        x_lengths,
+                        sid,
+                        tone,
+                        language,
+                        bert,
+                        style_vec=style_vec,
+                    )
+                else:
+                    bert = torch.zeros(1, 1024, seq_len, device=device)
+                    ja_bert = torch.zeros(1, 1024, seq_len, device=device)
+                    en_bert = torch.zeros(1, 1024, seq_len, device=device)
+                    net_g.infer(
+                        x,
+                        x_lengths,
+                        sid,
+                        tone,
+                        language,
+                        bert,
+                        ja_bert,
+                        en_bert,
+                        style_vec=style_vec,
+                    )
+
+        elapsed = time.time() - start
+        logger.info(f"torch.compile warmup ({i + 1}/2): {elapsed:.1f}s")
+
+    torch.cuda.empty_cache()
+
+
 def get_net_g(
     model_path: str, version: str, device: str, hps: HyperParameters
 ) -> SynthesizerTrn | SynthesizerTrnJPExtra:
@@ -107,6 +166,12 @@ def get_net_g(
             net_g.dp = torch.compile(net_g.dp, mode="default")
         except Exception:
             pass  # torch.compile 未対応環境ではスキップ
+        else:
+            # ダミー推論でコンパイルをトリガー（初回推論の遅延を回避）
+            try:
+                _warmup_compile(net_g, device, version.endswith("JP-Extra"))
+            except Exception as e:
+                logger.warning(f"torch.compile warmup failed: {e}")
 
     return net_g
 
